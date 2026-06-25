@@ -36,3 +36,9 @@ Thumbs.db
 .env
 *.local
 deploy/firebase-service-account.json
+
+# Kotlin/Gradle
+.kotlin/
+build/
+*.build/
+local.properties
