@@ -15,6 +15,9 @@ import com.biomech.feature.auth.LoginAction
 import com.biomech.feature.auth.LoginEvent
 import com.biomech.feature.auth.LoginScreen
 import com.biomech.feature.auth.LoginViewModel
+import com.biomech.feature.dashboard.DashboardAction
+import com.biomech.feature.dashboard.DashboardScreen
+import com.biomech.feature.dashboard.DashboardViewModel
 import com.biomech.feature.training.TrainingAction
 import com.biomech.feature.training.TrainingScreen
 import com.biomech.feature.training.TrainingViewModel
@@ -102,6 +105,19 @@ fun App() {
 
                     Screen.Main -> {
                         MainScreen(isOffline = startupState == AppStartupState.Offline)
+                    }
+
+                    Screen.Dashboard -> {
+                        val viewModel: DashboardViewModel = koinInject()
+                        val state by viewModel.state.collectAsState()
+
+                        DashboardScreen(
+                            deviceConnected = state.deviceConnected,
+                            emgData = state.emgData,
+                            onStartRecording = { viewModel.dispatch(DashboardAction.StartRecording) },
+                            onStopRecording = { viewModel.dispatch(DashboardAction.StopRecording) },
+                            onNavigateToTraining = { navigator.navigateTo(Screen.Training) },
+                        )
                     }
 
                     Screen.Training -> {
