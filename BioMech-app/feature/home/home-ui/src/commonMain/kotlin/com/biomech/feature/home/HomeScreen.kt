@@ -15,7 +15,7 @@ import com.biomech.domain.model.Device
 fun HomeScreen(
     devices: List<Device>,
     onAddDevice: () -> Unit,
-    onDeviceClick: (String) -> Unit,
+    onDeviceClick: (Device) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -60,7 +60,7 @@ fun HomeScreen(
             ) {
                 items(devices) { device ->
                     Card(
-                        onClick = { onDeviceClick(device.id) },
+                        onClick = { onDeviceClick(device) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(

@@ -39,6 +39,7 @@ kotlin {
             implementation(project(":feature:training:training-api"))
             implementation(project(":feature:training:training-data"))
             implementation(project(":feature:training:training-ui"))
+            implementation(project(":feature:dashboard:dashboard-ui"))
             implementation(project(":feature:settings:settings-ui"))
             implementation(libs.koin.core)
         }

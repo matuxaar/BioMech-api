@@ -11,6 +11,7 @@ import com.biomech.core.navigation.Screen
 import com.biomech.domain.model.Device
 import com.biomech.domain.model.DeviceType
 import com.biomech.feature.devices.AddDeviceBottomSheet
+import com.biomech.feature.devices.DeviceDetailSheet
 import com.biomech.feature.devices.DevicesAction
 import com.biomech.feature.devices.DevicesViewModel
 import com.biomech.feature.home.HomeAction
@@ -42,6 +43,7 @@ fun MainScreen(isOffline: Boolean = false) {
     var selectedTab by remember { mutableStateOf(BottomTab.HOME) }
     var showAddDeviceSheet by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("user@example.com") }
+    var selectedDevice by remember { mutableStateOf<Device?>(null) }
 
     val homeViewModel: HomeViewModel = koinInject()
     val homeState by homeViewModel.state.collectAsState()
@@ -100,6 +102,17 @@ fun MainScreen(isOffline: Boolean = false) {
         }
     }
 
+    selectedDevice?.let { device ->
+        ModalBottomSheet(
+            onDismissRequest = { selectedDevice = null }
+        ) {
+            DeviceDetailSheet(
+                device = device,
+                onDismiss = { selectedDevice = null },
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             if (isOffline) {
@@ -144,9 +157,7 @@ fun MainScreen(isOffline: Boolean = false) {
                 HomeScreen(
                     devices = if (isOffline) offlineDevices else homeState.devices,
                     onAddDevice = { showAddDeviceSheet = true },
-                    onDeviceClick = {
-                        navigator.navigateTo(Screen.Dashboard)
-                    },
+                    onDeviceClick = { device -> selectedDevice = device },
                 )
             }
             BottomTab.PROFILE -> {

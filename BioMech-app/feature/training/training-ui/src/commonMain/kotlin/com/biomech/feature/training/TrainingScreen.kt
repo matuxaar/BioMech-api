@@ -1,7 +1,5 @@
 package com.biomech.feature.training
 
-package com.biomech.feature.training
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items

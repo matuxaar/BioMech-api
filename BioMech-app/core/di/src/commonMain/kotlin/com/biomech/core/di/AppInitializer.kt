@@ -11,6 +11,7 @@ import com.biomech.core.storage.createKeyValueStorage
 import com.biomech.domain.usecase.LoginUseCase
 import com.biomech.domain.usecase.StartEMGSessionUseCase
 import com.biomech.feature.auth.LoginViewModel
+import com.biomech.feature.dashboard.DashboardViewModel
 import com.biomech.feature.home.HomeViewModel
 import com.biomech.feature.profile.ProfileViewModel
 import com.biomech.feature.settings.SettingsViewModel
@@ -21,6 +22,7 @@ import org.koin.dsl.module
 
 val viewModelsModule: Module = module {
     factory { LoginViewModel(get()) }
+    factory { DashboardViewModel(get(), get()) }
     factory { HomeViewModel(get()) }
     factory { ProfileViewModel(get()) }
     factory { SettingsViewModel(get()) }
