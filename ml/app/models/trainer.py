@@ -33,23 +33,29 @@ def build_model(input_dim: int, n_classes: int) -> tf.keras.Model:
 
 def train(
     data: np.ndarray,
-    labels: np.ndarray | None,
+    labels: np.ndarray,
     job_id: str,
     n_classes: int = 5,
 ) -> tuple[str, float]:
     features = sliding_window(data, settings.window_size, settings.window_size // 2)
 
-    if labels is None:
-        labels = np.zeros(len(features), dtype=np.int32)
+    if len(features) == 0:
+        raise ValueError(f"not enough samples (need at least {settings.window_size})")
 
-    min_len = min(len(features), len(labels))
-    features, labels = features[:min_len], labels[:min_len]
+    # Align labels with sliding windows: each window gets the label at its midpoint
+    y = np.array([
+        labels[min(start + settings.window_size // 2, len(labels) - 1)]
+        for start in range(0, len(data) - settings.window_size + 1, settings.window_size // 2)
+    ], dtype=np.int32)
+
+    min_len = min(len(features), len(y))
+    features, y = features[:min_len], y[:min_len]
 
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        features, labels, test_size=0.2, random_state=42
+        features, y, test_size=0.2, random_state=42
     )
 
     model = build_model(features.shape[1], n_classes)
