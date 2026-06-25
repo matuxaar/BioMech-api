@@ -9,6 +9,7 @@ import (
 func SetupRouter(
 	jwtManager *jwt.Manager,
 	authHandler *AuthHandler,
+	userHandler *UserHandler,
 	deviceHandler *DeviceHandler,
 	emgHandler *EMGHandler,
 	trainingHandler *TrainingHandler,
@@ -33,7 +34,7 @@ func SetupRouter(
 		protected := api.Group("")
 		protected.Use(middleware.AuthRequired(jwtManager))
 		{
-			protected.GET("/me", authHandler.Refresh)
+			protected.GET("/me", userHandler.Me)
 
 			devices := protected.Group("/devices")
 			{

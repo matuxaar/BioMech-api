@@ -45,11 +45,12 @@ func main() {
 	trainingService := service.NewTrainingService(trainingRepo, mlClient)
 
 	authHandler := handler.NewAuthHandler(authService)
+	userHandler := handler.NewUserHandler(authService)
 	deviceHandler := handler.NewDeviceHandler(deviceService)
 	emgHandler := handler.NewEMGHandler(emgService)
 	trainingHandler := handler.NewTrainingHandler(trainingService)
 
-	router := handler.SetupRouter(jwtManager, authHandler, deviceHandler, emgHandler, trainingHandler)
+	router := handler.SetupRouter(jwtManager, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,

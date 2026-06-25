@@ -90,6 +90,10 @@ func (s *AuthService) Login(ctx context.Context, req *model.LoginRequest) (*mode
 	}, nil
 }
 
+func (s *AuthService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
+	return s.userRepo.FindByID(ctx, userID)
+}
+
 func (s *AuthService) RefreshToken(ctx context.Context, tokenStr string) (*model.AuthResponse, error) {
 	claims, err := s.jwtManager.ValidateToken(tokenStr)
 	if err != nil {
