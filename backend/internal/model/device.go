@@ -23,3 +23,20 @@ type CreateDeviceRequest struct {
 	Name      string     `json:"name" binding:"required"`
 	HWVersion string     `json:"hw_version" binding:"required"`
 }
+
+type UpdateDeviceRequest struct {
+	Name      *string     `json:"name"`
+	HWVersion *string     `json:"hw_version"`
+	Type      *DeviceType `json:"type" binding:"omitempty,oneof=prosthetic sensor"`
+}
+
+type DeviceAction struct {
+	Name     string  `json:"name"`
+	Emoji    string  `json:"emoji"`
+	Accuracy float64 `json:"accuracy"`
+}
+
+type DeviceActionsResponse struct {
+	DeviceID string        `json:"device_id"`
+	Actions  []DeviceAction `json:"actions"`
+}

@@ -72,3 +72,30 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id string) (*model.Devi
 	}
 	return device, nil
 }
+
+func (r *DeviceRepository) Update(ctx context.Context, id string, req *model.UpdateDeviceRequest) (*model.Device, error) {
+	if req.Name != nil {
+		_, err := r.db.Exec(ctx, `UPDATE devices SET name = $1 WHERE id = $2`, *req.Name, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if req.HWVersion != nil {
+		_, err := r.db.Exec(ctx, `UPDATE devices SET hw_version = $1 WHERE id = $2`, *req.HWVersion, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if req.Type != nil {
+		_, err := r.db.Exec(ctx, `UPDATE devices SET type = $1 WHERE id = $2`, *req.Type, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return r.FindByID(ctx, id)
+}
+
+func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM devices WHERE id = $1`, id)
+	return err
+}

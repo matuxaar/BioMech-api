@@ -50,15 +50,18 @@ func main() {
 	authService := service.NewAuthService(userRepo)
 	deviceService := service.NewDeviceService(deviceRepo)
 	emgService := service.NewEMGService(emgRepo, deviceRepo)
-	trainingService := service.NewTrainingService(trainingRepo, mlClient)
+	trainingService := service.NewTrainingService(trainingRepo, emgRepo, mlClient)
+	statsRepo := repository.NewStatsRepository(db)
+	statsService := service.NewStatsService(statsRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(authService)
 	deviceHandler := handler.NewDeviceHandler(deviceService)
 	emgHandler := handler.NewEMGHandler(emgService)
 	trainingHandler := handler.NewTrainingHandler(trainingService)
+	statsHandler := handler.NewStatsHandler(statsService)
 
-	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler)
+	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
