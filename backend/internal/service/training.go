@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/motvii/desertacia/internal/model"
-	"github.com/motvii/desertacia/internal/repository"
+	"github.com/matuxaar/BioMech-api/internal/model"
+	"github.com/matuxaar/BioMech-api/internal/repository"
 )
 
 var ErrAccessDenied = errors.New("access denied")

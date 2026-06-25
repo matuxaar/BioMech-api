@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/motvii/desertacia/internal/model"
-	"github.com/motvii/desertacia/internal/repository"
+	"github.com/matuxaar/BioMech-api/internal/model"
+	"github.com/matuxaar/BioMech-api/internal/repository"
 )
 
 type DeviceService struct {

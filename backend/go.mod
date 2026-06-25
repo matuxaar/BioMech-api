@@ -1,4 +1,4 @@
-module github.com/motvii/desertacia
+module github.com/matuxaar/BioMech-api
 
 go 1.25
 

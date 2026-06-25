@@ -12,10 +12,10 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/motvii/desertacia/internal/config"
-	"github.com/motvii/desertacia/internal/handler"
-	"github.com/motvii/desertacia/internal/repository"
-	"github.com/motvii/desertacia/internal/service"
+	"github.com/matuxaar/BioMech-api/internal/config"
+	"github.com/matuxaar/BioMech-api/internal/handler"
+	"github.com/matuxaar/BioMech-api/internal/repository"
+	"github.com/matuxaar/BioMech-api/internal/service"
 	"google.golang.org/api/option"
 )
 

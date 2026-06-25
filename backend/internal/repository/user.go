@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/motvii/desertacia/internal/model"
+	"github.com/matuxaar/BioMech-api/internal/model"
 )
 
 type UserRepository struct {

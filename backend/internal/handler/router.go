@@ -3,7 +3,7 @@ package handler
 import (
 	firebase "firebase.google.com/go/v4"
 	"github.com/gin-gonic/gin"
-	"github.com/motvii/desertacia/internal/middleware"
+	"github.com/matuxaar/BioMech-api/internal/middleware"
 )
 
 func SetupRouter(

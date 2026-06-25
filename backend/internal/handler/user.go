@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/motvii/desertacia/internal/service"
+	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
 type UserHandler struct {

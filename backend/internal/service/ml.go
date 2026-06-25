@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/motvii/desertacia/internal/model"
+	"github.com/matuxaar/BioMech-api/internal/model"
 )
 
 type MLClient struct {
