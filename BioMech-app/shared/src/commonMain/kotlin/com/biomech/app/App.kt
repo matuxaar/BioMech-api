@@ -110,8 +110,10 @@ fun App() {
 
                         TrainingScreen(
                             jobs = state.jobs,
-                            sessionLabels = state.sessionLabels,
-                            selectedSessions = state.selectedSessions,
+                            sessions = state.sessions,
+                            selectedSessionIds = state.selectedSessionIds,
+                            isCreating = state.isCreating,
+                            error = state.error,
                             onToggleSession = { viewModel.dispatch(TrainingAction.ToggleSession(it)) },
                             onStartTraining = { viewModel.dispatch(TrainingAction.StartTraining) },
                         )
