@@ -8,7 +8,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /api ./cmd/api
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /api /api
-COPY deploy/firebase-service-account.json /secrets/firebase-service-account.json
 EXPOSE 8080
 USER nonroot:nonroot
 CMD ["/api"]

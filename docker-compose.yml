@@ -25,8 +25,10 @@ services:
     environment:
       SERVER_PORT: "8080"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
-      JWT_SECRET: "super-secret-key-change-in-production"
       ML_SERVICE_URL: "http://ml:8000"
+      FIREBASE_CREDENTIALS: "/secrets/firebase-service-account.json"
+    volumes:
+      - ./deploy/firebase-service-account.json:/secrets/firebase-service-account.json
     depends_on:
       db:
         condition: service_healthy
