@@ -16,6 +16,7 @@ fun DashboardScreen(
     emgData: List<Float>,
     onStartRecording: () -> Unit,
     onStopRecording: () -> Unit,
+    onNavigateToTraining: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -75,6 +76,15 @@ fun DashboardScreen(
                     ) {
                         Text("Stop")
                     }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = onNavigateToTraining,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Go to Training")
                 }
             }
         }

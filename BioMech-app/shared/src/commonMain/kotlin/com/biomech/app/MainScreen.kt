@@ -136,7 +136,7 @@ fun MainScreen(isOffline: Boolean = false) {
                     devices = homeState.devices,
                     onAddDevice = { showAddDeviceSheet = true },
                     onDeviceClick = { deviceId ->
-                        navigator.navigateTo(Screen.Training)
+                        navigator.navigateTo(Screen.Dashboard)
                     },
                 )
             }
