@@ -39,7 +39,7 @@ private val healthClient by lazy {
 private suspend fun isApiAvailable(): Boolean {
     return try {
         withTimeout(4_000) {
-            healthClient.get(ApiConfig.baseUrl)
+            healthClient.get(ApiConfig.healthUrl)
             true
         }
     } catch (_: Exception) {

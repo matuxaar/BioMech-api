@@ -13,6 +13,13 @@ import kotlinx.serialization.json.Json
 object ApiConfig {
     var baseUrl: String = "http://10.0.2.2:8080/api/v1"
     var token: String? = null
+
+    val healthUrl: String
+        get() {
+            val clean = baseUrl.trimEnd('/')
+            val idx = clean.indexOf("/api")
+            return if (idx > 0) clean.substring(0, idx) + "/health" else "$clean/health"
+        }
 }
 
 fun createHttpClient(): HttpClient {
