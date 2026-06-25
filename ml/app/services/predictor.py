@@ -75,13 +75,17 @@ class Predictor:
             dtype=np.float32,
         )
 
-        if len(data) < settings.window_size:
-            predictions = self._model.predict(data, verbose=0)
+        if len(data) >= settings.window_size:
+            features = extract_features(data[-settings.window_size:]).reshape(1, -1)
+        elif len(data) >= 1:
+            # Pad with zeros to reach window_size, then extract features
+            padded = np.zeros((settings.window_size, settings.n_channels), dtype=np.float32)
+            padded[-len(data):] = data
+            features = extract_features(padded).reshape(1, -1)
         else:
-            window = data[-settings.window_size:]
-            features = extract_features(window).reshape(1, -1)
-            predictions = self._model.predict(features, verbose=0)
+            raise ValueError("at least one sample required for prediction")
 
+        predictions = self._model.predict(features, verbose=0)
         predicted_indices = np.argmax(predictions, axis=1)
 
         return [
