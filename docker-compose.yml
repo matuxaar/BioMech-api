@@ -25,6 +25,7 @@ services:
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
       ML_SERVICE_URL: "http://ml:8000"
       FIREBASE_CREDENTIALS: "/secrets/firebase-service-account.json"
+      DEV_MODE: "true"
     volumes:
       - ./deploy/firebase-service-account.json:/secrets/firebase-service-account.json
     depends_on:
