@@ -8,9 +8,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.biomech.core.navigation.LocalNavigator
 import com.biomech.core.navigation.Screen
+import com.biomech.domain.model.Device
+import com.biomech.domain.model.DeviceType
 import com.biomech.feature.devices.AddDeviceBottomSheet
 import com.biomech.feature.devices.DevicesAction
-import com.biomech.feature.devices.DevicesEvent
 import com.biomech.feature.devices.DevicesViewModel
 import com.biomech.feature.home.HomeAction
 import com.biomech.feature.home.HomeViewModel
@@ -27,6 +28,12 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 enum class BottomTab { HOME, PROFILE, SETTINGS }
+
+private val offlineDevices = listOf(
+    Device(id = "dev-1", name = "MyoBand Pro", type = DeviceType.SENSOR, hwVersion = "2.1.0"),
+    Device(id = "dev-2", name = "NeuroFlex", type = DeviceType.SENSOR, hwVersion = "1.4.2"),
+    Device(id = "dev-3", name = "BioPulse", type = DeviceType.SENSOR, hwVersion = "3.0.1"),
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,8 +58,10 @@ fun MainScreen(isOffline: Boolean = false) {
     val devicesState by devicesViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        homeViewModel.dispatch(HomeAction.LoadDevices)
-        profileViewModel.dispatch(ProfileAction.LoadProfile)
+        if (!isOffline) {
+            homeViewModel.dispatch(HomeAction.LoadDevices)
+            profileViewModel.dispatch(ProfileAction.LoadProfile)
+        }
         profileViewModel.dispatch(ProfileAction.SetEmail(email))
     }
 
@@ -133,16 +142,16 @@ fun MainScreen(isOffline: Boolean = false) {
         when (selectedTab) {
             BottomTab.HOME -> {
                 HomeScreen(
-                    devices = homeState.devices,
+                    devices = if (isOffline) offlineDevices else homeState.devices,
                     onAddDevice = { showAddDeviceSheet = true },
-                    onDeviceClick = { deviceId ->
+                    onDeviceClick = {
                         navigator.navigateTo(Screen.Dashboard)
                     },
                 )
             }
             BottomTab.PROFILE -> {
                 ProfileScreen(
-                    email = profileState.email,
+                    email = if (isOffline) "demo@biomech.app" else profileState.email,
                     onLogout = {
                         profileViewModel.dispatch(ProfileAction.Logout)
                     },
