@@ -1,8 +1,0 @@
-package com.biomech.core.navigation
-
-sealed class Screen(val route: String) {
-    data object Login : Screen("login")
-    data object Main : Screen("main")
-    data object Dashboard : Screen("dashboard")
-    data object Training : Screen("training")
-}

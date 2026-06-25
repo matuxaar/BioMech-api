@@ -42,3 +42,6 @@ deploy/firebase-service-account.json
 build/
 *.build/
 local.properties
+
+# Mobile app (separate repo: BioMech-app)
+/BioMech-app/
