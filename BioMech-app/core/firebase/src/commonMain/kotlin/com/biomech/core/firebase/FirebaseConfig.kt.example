@@ -1,0 +1,6 @@
+package com.biomech.core.firebase
+
+object FirebaseConfig {
+    // Replace with your Firebase Web API Key from Project Settings > General
+    const val API_KEY: String = "YOUR_FIREBASE_API_KEY"
+}
