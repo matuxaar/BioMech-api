@@ -16,5 +16,8 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:common"))
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test.unit)
+        }
     }
 }

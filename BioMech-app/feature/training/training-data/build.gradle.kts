@@ -22,5 +22,9 @@ kotlin {
         androidMain.dependencies {
             implementation(project(":core:database"))
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test.unit)
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }

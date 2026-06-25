@@ -20,5 +20,9 @@ kotlin {
             implementation(project(":core:common"))
             implementation(project(":core:storage"))
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test.unit)
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }
