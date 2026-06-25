@@ -55,3 +55,56 @@ func (h *DeviceHandler) GetByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, devices)
 }
+
+func (h *DeviceHandler) Update(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req model.UpdateDeviceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	device, err := h.deviceService.Update(c.Request.Context(), userID, c.Param("id"), &req)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "access denied" {
+			status = http.StatusForbidden
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, device)
+}
+
+func (h *DeviceHandler) Delete(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	if err := h.deviceService.Delete(c.Request.Context(), userID, c.Param("id")); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "access denied" {
+			status = http.StatusForbidden
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "device deleted"})
+}
+
+func (h *DeviceHandler) GetActions(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	actions, err := h.deviceService.GetActions(c.Request.Context(), userID, c.Param("id"))
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "access denied" {
+			status = http.StatusForbidden
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, actions)
+}

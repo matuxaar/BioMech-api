@@ -37,3 +37,7 @@ func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (
 func (s *AuthService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
 	return s.userRepo.FindByID(ctx, userID)
 }
+
+func (s *AuthService) UpdateProfile(ctx context.Context, userID string, req *model.UpdateUserRequest) (*model.User, error) {
+	return s.userRepo.UpdateProfile(ctx, userID, req)
+}

@@ -13,6 +13,7 @@ func SetupRouter(
 	deviceHandler *DeviceHandler,
 	emgHandler *EMGHandler,
 	trainingHandler *TrainingHandler,
+	statsHandler *StatsHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -27,12 +28,16 @@ func SetupRouter(
 	{
 		protected.POST("/auth/firebase", authHandler.SyncUser)
 		protected.GET("/me", userHandler.Me)
+		protected.PUT("/me", userHandler.Update)
 
 		devices := protected.Group("/devices")
 		{
 			devices.POST("", deviceHandler.Create)
 			devices.GET("", deviceHandler.List)
 			devices.GET("/:id", deviceHandler.GetByID)
+			devices.PUT("/:id", deviceHandler.Update)
+			devices.DELETE("/:id", deviceHandler.Delete)
+			devices.GET("/:id/actions", deviceHandler.GetActions)
 		}
 
 		emg := protected.Group("/emg")
@@ -51,7 +56,11 @@ func SetupRouter(
 			training.POST("/jobs", trainingHandler.CreateJob)
 			training.GET("/jobs", trainingHandler.ListJobs)
 			training.GET("/jobs/:id", trainingHandler.GetJob)
+			training.POST("/upload", trainingHandler.Upload)
 		}
+
+		protected.POST("/predict", trainingHandler.Predict)
+		protected.GET("/stats/dashboard", statsHandler.Dashboard)
 	}
 
 	return r

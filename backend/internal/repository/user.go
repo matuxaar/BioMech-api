@@ -39,9 +39,9 @@ func (r *UserRepository) Create(ctx context.Context, id, email string) (*model.U
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
 	user := &model.User{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, email, created_at, updated_at
+		`SELECT id, email, COALESCE(display_name, ''), COALESCE(photo_url, ''), created_at, updated_at
 		 FROM users WHERE id = $1`, id,
-	).Scan(&user.ID, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &user.DisplayName, &user.PhotoURL, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +54,20 @@ func (r *UserRepository) UpdateEmail(ctx context.Context, id, email string) erro
 		email, time.Now(), id,
 	)
 	return err
+}
+
+func (r *UserRepository) UpdateProfile(ctx context.Context, id string, req *model.UpdateUserRequest) (*model.User, error) {
+	if req.DisplayName != nil {
+		_, err := r.db.Exec(ctx, `UPDATE users SET display_name = $1, updated_at = $2 WHERE id = $3`, *req.DisplayName, time.Now(), id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if req.PhotoURL != nil {
+		_, err := r.db.Exec(ctx, `UPDATE users SET photo_url = $1, updated_at = $2 WHERE id = $3`, *req.PhotoURL, time.Now(), id)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return r.FindByID(ctx, id)
 }
