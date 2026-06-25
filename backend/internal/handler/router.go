@@ -1,13 +1,13 @@
 package handler
 
 import (
+	firebase "firebase.google.com/go/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/motvii/desertacia/internal/middleware"
-	"github.com/motvii/desertacia/pkg/jwt"
 )
 
 func SetupRouter(
-	jwtManager *jwt.Manager,
+	firebaseApp *firebase.App,
 	authHandler *AuthHandler,
 	userHandler *UserHandler,
 	deviceHandler *DeviceHandler,
@@ -24,15 +24,10 @@ func SetupRouter(
 
 	api := r.Group("/api/v1")
 	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/refresh", authHandler.Refresh)
-		}
+		api.POST("/auth/firebase", authHandler.SyncUser)
 
 		protected := api.Group("")
-		protected.Use(middleware.AuthRequired(jwtManager))
+		protected.Use(middleware.AuthRequired(firebaseApp))
 		{
 			protected.GET("/me", userHandler.Me)
 

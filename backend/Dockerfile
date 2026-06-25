@@ -1,13 +1,14 @@
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /api ./cmd/api
 
-FROM alpine:3.19
-RUN apk --no-cache add ca-certificates
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /api /api
+COPY deploy/firebase-service-account.json /secrets/firebase-service-account.json
 EXPOSE 8080
+USER nonroot:nonroot
 CMD ["/api"]

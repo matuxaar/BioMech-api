@@ -1,0 +1,41 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/api'
+      - '-f'
+      - 'backend/Dockerfile'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/api'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'biomech-api'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/api'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--add-cloud-sql-instances=${_CLOUD_SQL_INSTANCE}'
+      - '--set-env-vars=DATABASE_URL=postgres://${_DB_USER}:${_DB_PASS}@localhost:5432/${_DB_NAME}?sslmode=disable'
+      - '--set-env-vars=SERVER_PORT=8080'
+      - '--set-env-vars=ML_SERVICE_URL=${_ML_SERVICE_URL}'
+      - '--set-env-vars=FIREBASE_CREDENTIALS=/secrets/firebase-service-account.json'
+
+substitutions:
+  _REGION: us-central1
+  _CLOUD_SQL_INSTANCE: biomech-217fe:us-central1:biomech-db
+  _DB_USER: postgres
+  _DB_PASS: postgres
+  _DB_NAME: desertacia
+  _ML_SERVICE_URL: http://biomech-ml:8000
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -35,3 +35,4 @@ Thumbs.db
 # Environment
 .env
 *.local
+deploy/firebase-service-account.json

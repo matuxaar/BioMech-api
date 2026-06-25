@@ -9,13 +9,17 @@ import (
 	"syscall"
 	"time"
 
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/motvii/desertacia/internal/config"
 	"github.com/motvii/desertacia/internal/handler"
 	"github.com/motvii/desertacia/internal/repository"
 	"github.com/motvii/desertacia/internal/service"
-	"github.com/motvii/desertacia/pkg/jwt"
+	"google.golang.org/api/option"
 )
+
+var firebaseAuth *auth.Client
 
 func main() {
 	cfg := config.Load()
@@ -30,7 +34,11 @@ func main() {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
-	jwtManager := jwt.NewManager(cfg.JWTSecret, cfg.JWTExpiresIn)
+	opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
+	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		log.Fatalf("failed to initialize Firebase app: %v", err)
+	}
 
 	userRepo := repository.NewUserRepository(db)
 	deviceRepo := repository.NewDeviceRepository(db)
@@ -39,7 +47,7 @@ func main() {
 
 	mlClient := service.NewMLClient(cfg.MLServiceURL)
 
-	authService := service.NewAuthService(userRepo, jwtManager, cfg.RefreshExpiry)
+	authService := service.NewAuthService(userRepo)
 	deviceService := service.NewDeviceService(deviceRepo)
 	emgService := service.NewEMGService(emgRepo, deviceRepo)
 	trainingService := service.NewTrainingService(trainingRepo, mlClient)
@@ -50,7 +58,7 @@ func main() {
 	emgHandler := handler.NewEMGHandler(emgService)
 	trainingHandler := handler.NewTrainingHandler(trainingService)
 
-	router := handler.SetupRouter(jwtManager, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler)
+	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
