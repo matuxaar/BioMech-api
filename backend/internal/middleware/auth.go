@@ -3,14 +3,24 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
-		firebase "firebase.google.com/go/v4"
+	firebase "firebase.google.com/go/v4"
 	"github.com/gin-gonic/gin"
 )
 
 func AuthRequired(firebaseApp *firebase.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		devMode := os.Getenv("DEV_MODE") == "true"
+
+		if devMode {
+			c.Set("user_id", "dev-user-id")
+			c.Set("email", "dev@biomech.app")
+			c.Next()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})

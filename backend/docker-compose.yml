@@ -27,6 +27,7 @@ services:
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
       JWT_SECRET: "super-secret-key-change-in-production"
       ML_SERVICE_URL: "http://ml:8000"
+      DEV_MODE: "true"
     depends_on:
       db:
         condition: service_healthy
