@@ -60,6 +60,7 @@ func main() {
 	deviceRepo := repository.NewDeviceRepository(db)
 	emgRepo := repository.NewEMGRepository(db)
 	trainingRepo := repository.NewTrainingRepository(db)
+	trainingFileRepo := repository.NewTrainingFileRepository(db)
 
 	mlClient := service.NewMLClient(cfg.MLServiceURL)
 
@@ -67,6 +68,7 @@ func main() {
 	deviceService := service.NewDeviceService(deviceRepo)
 	emgService := service.NewEMGService(emgRepo, deviceRepo)
 	trainingService := service.NewTrainingService(trainingRepo, emgRepo, mlClient)
+	trainingFileService := service.NewTrainingFileService(trainingFileRepo)
 	statsRepo := repository.NewStatsRepository(db)
 	statsService := service.NewStatsService(statsRepo)
 
@@ -75,11 +77,12 @@ func main() {
 	deviceHandler := handler.NewDeviceHandler(deviceService)
 	emgHandler := handler.NewEMGHandler(emgService)
 	trainingHandler := handler.NewTrainingHandler(trainingService)
+	trainingFileHandler := handler.NewTrainingFileHandler(trainingFileService)
 	statsHandler := handler.NewStatsHandler(statsService)
 
 	wsHandler := handler.NewWSHandler(mlClient)
 
-	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler)
+	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler, trainingFileHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,

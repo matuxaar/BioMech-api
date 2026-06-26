@@ -15,6 +15,7 @@ func SetupRouter(
 	trainingHandler *TrainingHandler,
 	statsHandler *StatsHandler,
 	wsHandler *WSHandler,
+	trainingFileHandler *TrainingFileHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -58,6 +59,10 @@ func SetupRouter(
 			training.GET("/jobs", trainingHandler.ListJobs)
 			training.GET("/jobs/:id", trainingHandler.GetJob)
 			training.POST("/upload", trainingHandler.Upload)
+			training.POST("/files", trainingFileHandler.Upload)
+			training.GET("/files", trainingFileHandler.List)
+			training.GET("/files/:id", trainingFileHandler.Get)
+			training.DELETE("/files/:id", trainingFileHandler.Delete)
 		}
 
 		protected.POST("/predict", trainingHandler.Predict)
