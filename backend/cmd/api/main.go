@@ -21,6 +21,20 @@ import (
 
 var firebaseAuth *auth.Client
 
+func runMigrations(db *pgxpool.Pool) {
+	migrations := []string{
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname VARCHAR(50) UNIQUE`,
+		`CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname)`,
+	}
+
+	for _, m := range migrations {
+		if _, err := db.Exec(context.Background(), m); err != nil {
+			log.Printf("migration warning: %v", err)
+		}
+	}
+	log.Println("migrations applied")
+}
+
 func main() {
 	cfg := config.Load()
 
@@ -33,6 +47,8 @@ func main() {
 	if err := db.Ping(context.Background()); err != nil {
 		log.Fatalf("failed to ping database: %v", err)
 	}
+
+	runMigrations(db)
 
 	opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
 	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,13 +20,13 @@ func NewUserHandler(authService *service.AuthService) *UserHandler {
 func (h *UserHandler) Me(c *gin.Context) {
 	userID := c.GetString("user_id")
 
-	user, err := h.authService.GetProfile(c.Request.Context(), userID)
+	profile, err := h.authService.GetProfile(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, profile)
 }
 
 func (h *UserHandler) Update(c *gin.Context) {
@@ -39,6 +40,10 @@ func (h *UserHandler) Update(c *gin.Context) {
 
 	user, err := h.authService.UpdateProfile(c.Request.Context(), userID, &req)
 	if err != nil {
+		if err.Error() == "nickname already taken" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
