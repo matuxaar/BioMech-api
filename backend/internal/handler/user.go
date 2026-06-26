@@ -38,7 +38,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	user, err := h.authService.UpdateProfile(c.Request.Context(), userID, &req)
+	_, err := h.authService.UpdateProfile(c.Request.Context(), userID, &req)
 	if err != nil {
 		if err.Error() == "nickname already taken" {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -48,5 +48,11 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	profile, err := h.authService.GetProfile(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
 }
