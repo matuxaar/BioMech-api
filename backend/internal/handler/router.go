@@ -14,6 +14,7 @@ func SetupRouter(
 	emgHandler *EMGHandler,
 	trainingHandler *TrainingHandler,
 	statsHandler *StatsHandler,
+	wsHandler *WSHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -60,6 +61,7 @@ func SetupRouter(
 		}
 
 		protected.POST("/predict", trainingHandler.Predict)
+		protected.GET("/predict/ws", wsHandler.PredictStream)
 		protected.GET("/stats/dashboard", statsHandler.Dashboard)
 	}
 

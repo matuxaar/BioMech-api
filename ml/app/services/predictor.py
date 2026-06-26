@@ -54,6 +54,11 @@ class Predictor:
             scaler_data = json.load(f)
             self._n_classes = scaler_data.get("n_classes", settings.n_classes)
 
+    def get_model(self):
+        if self._model is None:
+            self._load_latest()
+        return self._model
+
     def predict(self, samples: list[EMGSample]) -> list[str]:
         if self._model is None:
             self._load_latest()

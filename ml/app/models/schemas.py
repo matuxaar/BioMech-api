@@ -36,3 +36,22 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     predictions: list[str]
+
+
+class StreamSample(BaseModel):
+    ch1: float
+    ch2: float
+    ch3: float
+    ch4: float
+    ch5: float
+    ch6: float
+    ch7: float
+    ch8: float
+
+
+class StreamPredictRequest(BaseModel):
+    samples: list[StreamSample]
+
+
+class StreamPredictResponse(BaseModel):
+    predictions: list[str]

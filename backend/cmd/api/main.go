@@ -77,13 +77,15 @@ func main() {
 	trainingHandler := handler.NewTrainingHandler(trainingService)
 	statsHandler := handler.NewStatsHandler(statsService)
 
-	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler)
+	wsHandler := handler.NewWSHandler(mlClient)
+
+	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 0,
 		IdleTimeout:  60 * time.Second,
 	}
 
