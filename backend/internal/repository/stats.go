@@ -18,27 +18,24 @@ func NewStatsRepository(db *pgxpool.Pool) *StatsRepository {
 func (r *StatsRepository) GetDashboardStats(ctx context.Context, userID string) (*model.DashboardStats, error) {
 	stats := &model.DashboardStats{}
 
-	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM devices WHERE user_id = $1`, userID).Scan(&stats.DeviceCount)
-	if err != nil {
-		return nil, err
-	}
+	r.db.QueryRow(ctx, `SELECT COUNT(*) FROM devices WHERE user_id = $1`, userID).Scan(&stats.DeviceCount)
+	r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_jobs WHERE user_id = $1`, userID).Scan(&stats.TotalTrainings)
+	r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_jobs WHERE user_id = $1 AND status = 'completed'`, userID).Scan(&stats.CompletedTrainings)
+	r.db.QueryRow(ctx, `SELECT COALESCE(AVG(accuracy), 0) FROM training_jobs WHERE user_id = $1 AND status = 'completed'`, userID).Scan(&stats.AverageAccuracy)
 
-	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_jobs WHERE user_id = $1`, userID).Scan(&stats.TotalTrainings)
-	if err != nil {
-		return nil, err
+	topMovements, err := r.db.Query(ctx,
+		`SELECT DISTINCT da.name FROM device_actions da
+		 JOIN devices d ON d.id = da.device_id
+		 WHERE d.user_id = $1 ORDER BY da.name`, userID,
+	)
+	if err == nil {
+		defer topMovements.Close()
+		for topMovements.Next() {
+			var name string
+			topMovements.Scan(&name)
+			stats.TopMovements = append(stats.TopMovements, name)
+		}
 	}
-
-	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_jobs WHERE user_id = $1 AND status = 'completed'`, userID).Scan(&stats.CompletedTrainings)
-	if err != nil {
-		return nil, err
-	}
-
-	err = r.db.QueryRow(ctx, `SELECT COALESCE(AVG(accuracy), 0) FROM training_jobs WHERE user_id = $1 AND status = 'completed'`, userID).Scan(&stats.AverageAccuracy)
-	if err != nil {
-		return nil, err
-	}
-
-	stats.TopMovements = []string{"rest", "fist", "open", "pinch", "point"}
 
 	return stats, nil
 }

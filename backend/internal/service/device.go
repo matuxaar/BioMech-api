@@ -59,12 +59,9 @@ func (s *DeviceService) GetActions(ctx context.Context, userID, deviceID string)
 		return nil, errors.New("access denied")
 	}
 
-	actions := []model.DeviceAction{
-		{Name: "Rest", Emoji: "\u270B", Accuracy: 0.95},
-		{Name: "Fist", Emoji: "\u270A", Accuracy: 0.92},
-		{Name: "Open", Emoji: "\uD83D\uDD90\uFE0F", Accuracy: 0.88},
-		{Name: "Pinch", Emoji: "\uD83E\uDD1F", Accuracy: 0.75},
-		{Name: "Point", Emoji: "\u261D\uFE0F", Accuracy: 0.70},
+	actions, err := s.deviceRepo.GetActions(ctx, deviceID)
+	if err != nil {
+		return nil, err
 	}
 
 	return &model.DeviceActionsResponse{

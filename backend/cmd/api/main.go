@@ -25,8 +25,13 @@ func runMigrations(db *pgxpool.Pool) {
 	migrations := []string{
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname VARCHAR(50) UNIQUE`,
 		`CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname)`,
+		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_service_uuid VARCHAR(64) DEFAULT ''`,
+		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_command_char_uuid VARCHAR(64) DEFAULT ''`,
+		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_status_char_uuid VARCHAR(64) DEFAULT ''`,
+		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_emg_char_uuid VARCHAR(64) DEFAULT ''`,
+		`ALTER TABLE device_actions ADD COLUMN IF NOT EXISTS action_code INT NOT NULL DEFAULT 0`,
 	}
-
+	
 	for _, m := range migrations {
 		if _, err := db.Exec(context.Background(), m); err != nil {
 			log.Printf("migration warning: %v", err)
