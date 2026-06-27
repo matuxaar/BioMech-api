@@ -130,3 +130,26 @@ func (h *TrainingHandler) Upload(c *gin.Context) {
 		"message":    "file uploaded and session created",
 	})
 }
+
+func (h *TrainingHandler) UpdateJobStatus(c *gin.Context) {
+	jobID := c.Param("id")
+
+	var req struct {
+		Status    string  `json:"status" binding:"required"`
+		ModelPath string  `json:"model_path"`
+		Accuracy  float64 `json:"accuracy"`
+		ErrorMsg  string  `json:"error_message"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.trainingService.UpdateJobStatus(c.Request.Context(), jobID, req.Status, req.ModelPath, req.Accuracy, req.ErrorMsg)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "status updated"})
+}

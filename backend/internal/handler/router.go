@@ -25,6 +25,8 @@ func SetupRouter(
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	r.POST("/api/v1/training/jobs/:id/status", trainingHandler.UpdateJobStatus)
+
 	r.Static("/uploads", "./uploads")
 
 	protected := r.Group("/api/v1")

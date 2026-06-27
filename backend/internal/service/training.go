@@ -37,6 +37,10 @@ func (s *TrainingService) GetJob(ctx context.Context, id string) (*model.Trainin
 	return s.trainingRepo.FindByID(ctx, id)
 }
 
+func (s *TrainingService) UpdateJobStatus(ctx context.Context, id, status, modelPath string, accuracy float64, errMsg string) error {
+	return s.trainingRepo.UpdateStatus(ctx, id, model.TrainingStatus(status), modelPath, accuracy, errMsg)
+}
+
 func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error {
 	job, err := s.trainingRepo.FindByID(ctx, jobID)
 	if err != nil {
