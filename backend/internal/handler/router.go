@@ -25,12 +25,17 @@ func SetupRouter(
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	r.Static("/uploads", "./uploads")
+
 	protected := r.Group("/api/v1")
 	protected.Use(middleware.AuthRequired(firebaseApp))
 	{
 		protected.POST("/auth/firebase", authHandler.SyncUser)
 		protected.GET("/me", userHandler.Me)
 		protected.PUT("/me", userHandler.Update)
+		protected.POST("/me/avatar", userHandler.UploadAvatar)
+
+		protected.GET("/users/:id", userHandler.GetByID)
 
 		devices := protected.Group("/devices")
 		{
