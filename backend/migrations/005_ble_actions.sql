@@ -1,0 +1,8 @@
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_service_uuid VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_command_char_uuid VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_status_char_uuid VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_emg_char_uuid VARCHAR(255) NOT NULL DEFAULT '';
+
+ALTER TABLE device_actions ADD COLUMN IF NOT EXISTS action_code INT NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_devices_ble_service_uuid ON devices(ble_service_uuid);
