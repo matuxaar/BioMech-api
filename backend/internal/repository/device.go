@@ -89,25 +89,39 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id string) (*model.Devi
 
 func (r *DeviceRepository) Update(ctx context.Context, id string, req *model.UpdateDeviceRequest) (*model.Device, error) {
 	if req.Name != nil {
-		r.db.Exec(ctx, `UPDATE devices SET name = $1 WHERE id = $2`, *req.Name, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET name = $1 WHERE id = $2`, *req.Name, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.HWVersion != nil {
-		r.db.Exec(ctx, `UPDATE devices SET hw_version = $1 WHERE id = $2`, *req.HWVersion, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET hw_version = $1 WHERE id = $2`, *req.HWVersion, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.Type != nil {
-		r.db.Exec(ctx, `UPDATE devices SET type = $1 WHERE id = $2`, *req.Type, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET type = $1 WHERE id = $2`, *req.Type, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.BLEServiceUUID != nil {
-		r.db.Exec(ctx, `UPDATE devices SET ble_service_uuid = $1 WHERE id = $2`, *req.BLEServiceUUID, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET ble_service_uuid = $1 WHERE id = $2`, *req.BLEServiceUUID, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.BLECommandCharUUID != nil {
-		r.db.Exec(ctx, `UPDATE devices SET ble_command_char_uuid = $1 WHERE id = $2`, *req.BLECommandCharUUID, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET ble_command_char_uuid = $1 WHERE id = $2`, *req.BLECommandCharUUID, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.BLEStatusCharUUID != nil {
-		r.db.Exec(ctx, `UPDATE devices SET ble_status_char_uuid = $1 WHERE id = $2`, *req.BLEStatusCharUUID, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET ble_status_char_uuid = $1 WHERE id = $2`, *req.BLEStatusCharUUID, id); err != nil {
+			return nil, err
+		}
 	}
 	if req.BLEEMGCharUUID != nil {
-		r.db.Exec(ctx, `UPDATE devices SET ble_emg_char_uuid = $1 WHERE id = $2`, *req.BLEEMGCharUUID, id)
+		if _, err := r.db.Exec(ctx, `UPDATE devices SET ble_emg_char_uuid = $1 WHERE id = $2`, *req.BLEEMGCharUUID, id); err != nil {
+			return nil, err
+		}
 	}
 	return r.FindByID(ctx, id)
 }
