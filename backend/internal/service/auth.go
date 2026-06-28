@@ -37,7 +37,11 @@ func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (
 func (s *AuthService) GetProfile(ctx context.Context, userID string) (*model.ProfileResponse, error) {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, err
+		// auto-create user if not found (skip flow, dev mode)
+		user, err = s.userRepo.Create(ctx, userID, "dev@biomech.app")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	deviceCount, err := s.userRepo.CountDevices(ctx, userID)
