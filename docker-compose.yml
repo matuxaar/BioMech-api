@@ -29,6 +29,7 @@ services:
       DEV_MODE: "true"
     volumes:
       - ./deploy/firebase-service-account.json:/secrets/firebase-service-account.json
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -54,3 +55,4 @@ services:
 volumes:
   pgdata:
   ml_models:
+  uploads:

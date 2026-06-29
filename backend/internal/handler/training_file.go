@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/matuxaar/BioMech-api/internal/service"
@@ -60,6 +61,16 @@ func (h *TrainingFileHandler) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, file)
+}
+
+func (h *TrainingFileHandler) Download(c *gin.Context) {
+	filePath, err := h.fileService.GetFilePath(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+		return
+	}
+
+	c.FileAttachment(filePath, filepath.Base(filePath))
 }
 
 func (h *TrainingFileHandler) Delete(c *gin.Context) {

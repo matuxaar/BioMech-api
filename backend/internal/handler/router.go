@@ -69,6 +69,7 @@ func SetupRouter(
 			training.POST("/files", trainingFileHandler.Upload)
 			training.GET("/files", trainingFileHandler.List)
 			training.GET("/files/:id", trainingFileHandler.Get)
+			training.GET("/files/:id/download", trainingFileHandler.Download)
 			training.DELETE("/files/:id", trainingFileHandler.Delete)
 		}
 

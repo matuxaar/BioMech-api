@@ -29,10 +29,15 @@ func (r *TrainingFileRepository) Create(ctx context.Context, userID, deviceID, o
 		CreatedAt:    time.Now(),
 	}
 
+	var devID any = deviceID
+	if deviceID == "" {
+		devID = nil
+	}
+
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO training_files (id, user_id, device_id, original_name, file_path, file_size, label, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		f.ID, f.UserID, f.DeviceID, f.OriginalName, f.FilePath, f.FileSize, f.Label, f.CreatedAt,
+		f.ID, f.UserID, devID, f.OriginalName, f.FilePath, f.FileSize, f.Label, f.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
