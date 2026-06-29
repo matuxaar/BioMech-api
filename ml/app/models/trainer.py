@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import tempfile
 
 import numpy as np
@@ -10,6 +11,8 @@ from sklearn.model_selection import train_test_split
 from app.config import settings
 from app.services.features import sliding_window
 from app.services.storage import save_model
+
+logger = logging.getLogger(__name__)
 
 
 def build_model(input_dim: int, n_classes: int) -> tf.keras.Model:
@@ -42,7 +45,6 @@ def train(
     if len(features) == 0:
         raise ValueError(f"not enough samples (need at least {settings.window_size})")
 
-    # Align labels with sliding windows: each window gets the label at its midpoint
     y = np.array([
         labels[min(start + settings.window_size // 2, len(labels) - 1)]
         for start in range(0, len(data) - settings.window_size + 1, settings.window_size // 2)
@@ -54,9 +56,18 @@ def train(
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        features, y, test_size=0.2, random_state=42, stratify=y,
-    )
+    unique_classes = np.unique(y)
+    stratify_possible = len(unique_classes) > 1 and all(np.sum(y == c) > 1 for c in unique_classes)
+
+    if stratify_possible:
+        X_train, X_test, y_train, y_test = train_test_split(
+            features, y, test_size=0.2, random_state=42, stratify=y,
+        )
+    else:
+        logger.warning("cannot stratify: some classes have <2 samples, using random split")
+        X_train, X_test, y_train, y_test = train_test_split(
+            features, y, test_size=0.2, random_state=42,
+        )
 
     model = build_model(features.shape[1], n_classes)
 
@@ -95,6 +106,12 @@ def train(
             json.dump(scaler_data, f)
 
         remote_model_path = save_model(model_path, job_id)
-        save_model(scaler_path, f"{job_id}_scaler.json")
+        try:
+            save_model(scaler_path, f"{job_id}_scaler.json")
+        except Exception:
+            logger.error("scaler save failed for job %s, model %s", job_id, remote_model_path)
+
+    tf.keras.backend.clear_session()
+    logger.info("training completed for job %s: accuracy=%.4f", job_id, accuracy)
 
     return remote_model_path, float(accuracy)

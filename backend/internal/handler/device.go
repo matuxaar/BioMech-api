@@ -10,10 +10,10 @@ import (
 )
 
 type DeviceHandler struct {
-	deviceService *service.DeviceService
+	deviceService DeviceService
 }
 
-func NewDeviceHandler(deviceService *service.DeviceService) *DeviceHandler {
+func NewDeviceHandler(deviceService DeviceService) *DeviceHandler {
 	return &DeviceHandler{deviceService: deviceService}
 }
 

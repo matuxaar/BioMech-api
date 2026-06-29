@@ -5,14 +5,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/matuxaar/BioMech-api/internal/model"
-	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
 type TrainingHandler struct {
-	trainingService *service.TrainingService
+	trainingService TrainingService
 }
 
-func NewTrainingHandler(trainingService *service.TrainingService) *TrainingHandler {
+func NewTrainingHandler(trainingService TrainingService) *TrainingHandler {
 	return &TrainingHandler{trainingService: trainingService}
 }
 
@@ -61,11 +60,6 @@ func (h *TrainingHandler) GetJob(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, job)
-}
-
-type uploadRequest struct {
-	DeviceID string `json:"device_id" binding:"required"`
-	Label    string `json:"label"`
 }
 
 type predictRequest struct {

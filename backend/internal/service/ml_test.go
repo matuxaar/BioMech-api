@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/matuxaar/BioMech-api/internal/model"
 )
@@ -26,13 +28,13 @@ func TestMLClient_Train_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
+	client := NewMLClient(srv.URL, 5*time.Second)
 	job := &model.TrainingJob{
 		ID:         "test-job",
 		SessionIDs: []string{"sess-1", "sess-2"},
 	}
 
-	result, err := client.Train(job)
+	result, err := client.Train(context.Background(), job)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,13 +55,13 @@ func TestMLClient_Train_ServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
+	client := NewMLClient(srv.URL, 5*time.Second)
 	job := &model.TrainingJob{
 		ID:         "test-job",
 		SessionIDs: []string{"sess-1"},
 	}
 
-	_, err := client.Train(job)
+	_, err := client.Train(context.Background(), job)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -72,13 +74,13 @@ func TestMLClient_Train_UnmarshalError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
+	client := NewMLClient(srv.URL, 5*time.Second)
 	job := &model.TrainingJob{
 		ID:         "test-job",
 		SessionIDs: []string{"sess-1"},
 	}
 
-	_, err := client.Train(job)
+	_, err := client.Train(context.Background(), job)
 	if err == nil {
 		t.Fatal("expected unmarshal error, got nil")
 	}
@@ -96,13 +98,13 @@ func TestMLClient_Predict_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
+	client := NewMLClient(srv.URL, 5*time.Second)
 	samples := []model.EMGSample{
 		{Channel1: 0.1, Channel2: 0.2, Channel3: 0.3, Channel4: 0.4, Channel5: 0.5, Channel6: 0.6, Channel7: 0.7, Channel8: 0.8},
 		{Channel1: 0.2, Channel2: 0.3, Channel3: 0.4, Channel4: 0.5, Channel5: 0.6, Channel6: 0.7, Channel7: 0.8, Channel8: 0.9},
 	}
 
-	predictions, err := client.Predict(samples)
+	predictions, err := client.Predict(context.Background(), samples)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,12 +128,12 @@ func TestMLClient_PredictStream_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
+	client := NewMLClient(srv.URL, 5*time.Second)
 	samples := []model.StreamSample{
 		{Channel1: 0.1, Channel2: 0.2, Channel3: 0.3, Channel4: 0.4, Channel5: 0.5, Channel6: 0.6, Channel7: 0.7, Channel8: 0.8},
 	}
 
-	predictions, err := client.PredictStream(samples)
+	predictions, err := client.PredictStream(context.Background(), samples)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,8 +151,8 @@ func TestMLClient_Predict_ServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewMLClient(srv.URL)
-	_, err := client.Predict(nil)
+	client := NewMLClient(srv.URL, 5*time.Second)
+	_, err := client.Predict(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

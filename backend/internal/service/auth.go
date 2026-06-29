@@ -3,14 +3,16 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/matuxaar/BioMech-api/internal/model"
 	"github.com/matuxaar/BioMech-api/internal/repository"
 )
 
 var (
-	ErrUserNotFound   = errors.New("user not found")
-	ErrNicknameTaken  = errors.New("nickname already taken")
+	ErrUserNotFound  = errors.New("user not found")
+	ErrNicknameTaken = errors.New("nickname already taken")
 )
 
 type AuthService struct {
@@ -24,15 +26,21 @@ func NewAuthService(userRepo *repository.UserRepository) *AuthService {
 }
 
 func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (*model.User, error) {
-	existing, _ := s.userRepo.FindByID(ctx, firebaseUID)
-	if existing != nil {
-		if existing.Email != email && email != "" {
-			_ = s.userRepo.UpdateEmail(ctx, firebaseUID, email)
+	existing, err := s.userRepo.FindByID(ctx, firebaseUID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("failed to lookup user during sync", "uid", firebaseUID, "error", err)
+			return nil, err
 		}
-		return existing, nil
+		return s.userRepo.Create(ctx, firebaseUID, email)
 	}
 
-	return s.userRepo.Create(ctx, firebaseUID, email)
+	if existing.Email != email && email != "" {
+		if err := s.userRepo.UpdateEmail(ctx, firebaseUID, email); err != nil {
+			slog.Error("failed to update email during sync", "uid", firebaseUID, "error", err)
+		}
+	}
+	return existing, nil
 }
 
 func (s *AuthService) GetProfile(ctx context.Context, userID string) (*model.ProfileResponse, error) {

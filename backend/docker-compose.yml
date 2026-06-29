@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16-alpine
@@ -11,11 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
-      - ./migrations/002_actions.sql:/docker-entrypoint-initdb.d/002_actions.sql
-      - ./migrations/003_nickname.sql:/docker-entrypoint-initdb.d/003_nickname.sql
-      - ./migrations/004_training_files.sql:/docker-entrypoint-initdb.d/004_training_files.sql
-      - ./migrations/005_ble_actions.sql:/docker-entrypoint-initdb.d/005_ble_actions.sql
+      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -43,8 +37,12 @@ services:
       SERVER_PORT: "8080"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
       ML_SERVICE_URL: "http://ml:8000"
+      INTERNAL_API_KEY: "dev-key"
       DEV_MODE: "true"
       MIGRATIONS_DIR: "/migrations"
+      UPLOADS_DIR: "/uploads"
+    volumes:
+      - uploads:/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -52,3 +50,4 @@ services:
 volumes:
   pgdata:
   ml_models:
+  uploads:

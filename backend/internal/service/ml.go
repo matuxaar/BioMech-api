@@ -2,8 +2,10 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -12,24 +14,26 @@ import (
 )
 
 type MLClient struct {
-	baseURL string
-	client  *http.Client
+	baseURL    string
+	httpClient *http.Client
 }
 
-func NewMLClient(baseURL string) *MLClient {
+func NewMLClient(baseURL string, timeout time.Duration) *MLClient {
 	return &MLClient{
 		baseURL: baseURL,
-		client: &http.Client{
-			Timeout: 30 * time.Second,
+		httpClient: &http.Client{
+			Timeout: timeout,
 		},
 	}
 }
 
 func checkResponse(resp *http.Response) error {
 	if resp.StatusCode >= 300 {
-		body := make([]byte, 1024)
-		n, _ := resp.Body.Read(body)
-		return fmt.Errorf("ML service returned %d: %s", resp.StatusCode, string(body[:n]))
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if err != nil {
+			return fmt.Errorf("ML service returned %d: (failed to read body: %w)", resp.StatusCode, err)
+		}
+		return fmt.Errorf("ML service returned %d: %s", resp.StatusCode, string(body))
 	}
 	return nil
 }
@@ -45,7 +49,7 @@ type trainResponse struct {
 	ModelPath string  `json:"model_path"`
 }
 
-func (c *MLClient) Train(job *model.TrainingJob) (*trainResponse, error) {
+func (c *MLClient) Train(ctx context.Context, job *model.TrainingJob) (*trainResponse, error) {
 	body := trainRequest{
 		JobID:      job.ID,
 		SessionIDs: job.SessionIDs,
@@ -56,7 +60,7 @@ func (c *MLClient) Train(job *model.TrainingJob) (*trainResponse, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", c.baseURL+"/train", bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/train", bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +69,7 @@ func (c *MLClient) Train(job *model.TrainingJob) (*trainResponse, error) {
 		req.Header.Set("X-API-Key", apiKey)
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +106,7 @@ type mlPredictResponse struct {
 	Predictions []string `json:"predictions"`
 }
 
-func (c *MLClient) Predict(samples []model.EMGSample) ([]string, error) {
+func (c *MLClient) Predict(ctx context.Context, samples []model.EMGSample) ([]string, error) {
 	body := mlPredictRequest{Samples: make([]mlStreamSample, len(samples))}
 	for i, s := range samples {
 		body.Samples[i] = mlStreamSample{
@@ -120,7 +124,14 @@ func (c *MLClient) Predict(samples []model.EMGSample) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Post(c.baseURL+"/predict/stream", "application/json", bytes.NewReader(data))
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/predict/stream", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +148,7 @@ func (c *MLClient) Predict(samples []model.EMGSample) ([]string, error) {
 	return result.Predictions, nil
 }
 
-func (c *MLClient) PredictStream(samples []model.StreamSample) ([]string, error) {
+func (c *MLClient) PredictStream(ctx context.Context, samples []model.StreamSample) ([]string, error) {
 	converted := make([]mlStreamSample, len(samples))
 	for i, s := range samples {
 		converted[i] = mlStreamSample{
@@ -158,7 +169,13 @@ func (c *MLClient) PredictStream(samples []model.StreamSample) ([]string, error)
 		return nil, err
 	}
 
-	resp, err := c.client.Post(c.baseURL+"/predict/stream", "application/json", bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/predict/stream", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

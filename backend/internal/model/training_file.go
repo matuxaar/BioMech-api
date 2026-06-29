@@ -13,7 +13,3 @@ type TrainingFile struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-type FileUploadResponse struct {
-	ID      string `json:"id"`
-	Message string `json:"message"`
-}

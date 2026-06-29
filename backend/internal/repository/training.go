@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,8 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/matuxaar/BioMech-api/internal/model"
 )
-
-var ErrTrainingJobNotFound = errors.New("training job not found")
 
 type TrainingRepository struct {
 	db *pgxpool.Pool

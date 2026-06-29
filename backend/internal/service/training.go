@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -56,7 +56,13 @@ func (s *TrainingService) GetJob(ctx context.Context, userID, id string) (*model
 }
 
 func (s *TrainingService) UpdateJobStatus(ctx context.Context, id, status, modelPath string, accuracy float64, errMsg string) error {
-	return s.trainingRepo.UpdateStatus(ctx, id, model.TrainingStatus(status), modelPath, accuracy, errMsg)
+	ts := model.TrainingStatus(status)
+	switch ts {
+	case model.TrainingStatusPending, model.TrainingStatusRunning, model.TrainingStatusCompleted, model.TrainingStatusFailed:
+	default:
+		return fmt.Errorf("invalid training status: %s", status)
+	}
+	return s.trainingRepo.UpdateStatus(ctx, id, ts, modelPath, accuracy, errMsg)
 }
 
 func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error {
@@ -70,28 +76,32 @@ func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error
 	}
 
 	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("panic in StartTraining goroutine: %v\n%s", r, debug.Stack())
-				s.trainingRepo.UpdateStatus(context.Background(), jobID, model.TrainingStatusFailed, "", 0, fmt.Sprintf("panic: %v", r))
+				slog.Error("panic in StartTraining goroutine", "job_id", jobID, "panic", r, "stack", string(debug.Stack()))
+				s.trainingRepo.UpdateStatus(ctx, jobID, model.TrainingStatusFailed, "", 0, fmt.Sprintf("panic: %v", r))
 			}
 		}()
-		result, err := s.mlClient.Train(job)
+		result, err := s.mlClient.Train(ctx, job)
 		if err != nil {
-			s.trainingRepo.UpdateStatus(context.Background(), jobID, model.TrainingStatusFailed, "", 0, err.Error())
+			slog.Error("training failed", "job_id", jobID, "error", err)
+			s.trainingRepo.UpdateStatus(ctx, jobID, model.TrainingStatusFailed, "", 0, err.Error())
 			return
 		}
 		status := model.TrainingStatusCompleted
 		if result.Status == "failed" {
 			status = model.TrainingStatusFailed
 		}
-		s.trainingRepo.UpdateStatus(context.Background(), jobID, status, result.ModelPath, result.Accuracy, "")
+		s.trainingRepo.UpdateStatus(ctx, jobID, status, result.ModelPath, result.Accuracy, "")
 		if status == model.TrainingStatusCompleted {
-			deviceIDs, err := s.emgRepo.FindDeviceIDsBySessionIDs(context.Background(), job.SessionIDs)
+			deviceIDs, err := s.emgRepo.FindDeviceIDsBySessionIDs(ctx, job.SessionIDs)
 			if err == nil {
 				now := time.Now()
 				for _, did := range deviceIDs {
-					s.deviceRepo.UpdateLastTrainingAt(context.Background(), did, now)
+					s.deviceRepo.UpdateLastTrainingAt(ctx, did, now)
 				}
 			}
 		}
@@ -101,7 +111,7 @@ func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error
 }
 
 func (s *TrainingService) Predict(ctx context.Context, samples []model.EMGSample) (*model.PredictResponse, error) {
-	predictions, err := s.mlClient.Predict(samples)
+	predictions, err := s.mlClient.Predict(ctx, samples)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +137,7 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 		return nil, errors.New("invalid CSV: expected at least 9 columns (timestamp + 8 channels)")
 	}
 
+	var parseErrors int
 	var samples []model.AddSampleRequest
 	for {
 		record, err := reader.Read()
@@ -139,6 +150,7 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 
 		ts, err := time.Parse(time.RFC3339, strings.TrimSpace(record[0]))
 		if err != nil {
+			slog.Warn("csv: invalid timestamp, using current time", "value", record[0])
 			ts = time.Now()
 		}
 
@@ -146,7 +158,14 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 			Timestamp: ts,
 		}
 		for i := 0; i < 8 && i+1 < len(record); i++ {
-			val, _ := strconv.ParseFloat(strings.TrimSpace(record[i+1]), 64)
+			val, err := strconv.ParseFloat(strings.TrimSpace(record[i+1]), 64)
+			if err != nil {
+				parseErrors++
+				if parseErrors <= 5 {
+					slog.Warn("csv: invalid channel value", "row", len(samples)+1, "channel", i+1, "value", record[i+1])
+				}
+				val = 0
+			}
 			switch i {
 			case 0:
 				sample.Channel1 = val
@@ -171,6 +190,10 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 
 	if len(samples) == 0 {
 		return nil, errors.New("CSV contains no data rows")
+	}
+
+	if parseErrors > 0 {
+		slog.Warn("csv upload had parse errors", "total_errors", parseErrors, "total_rows", len(samples))
 	}
 
 	if err := s.emgRepo.AddSamplesBatch(ctx, session.ID, samples); err != nil {

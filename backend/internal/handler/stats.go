@@ -4,14 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
 type StatsHandler struct {
-	statsService *service.StatsService
+	statsService StatsService
 }
 
-func NewStatsHandler(statsService *service.StatsService) *StatsHandler {
+func NewStatsHandler(statsService StatsService) *StatsHandler {
 	return &StatsHandler{statsService: statsService}
 }
 

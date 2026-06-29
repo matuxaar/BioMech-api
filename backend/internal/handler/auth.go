@@ -1,25 +1,35 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService AuthService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
 func (h *AuthHandler) SyncUser(c *gin.Context) {
 	userID := c.GetString("user_id")
-	email, _ := c.Get("email")
 
-	emailStr, _ := email.(string)
+	emailRaw, exists := c.Get("email")
+	var emailStr string
+	if exists {
+		var ok bool
+		emailStr, ok = emailRaw.(string)
+		if !ok {
+			slog.Warn("sync user: email claim is not a string", "uid", userID)
+		}
+	} else {
+		slog.Warn("sync user: email claim missing from token", "uid", userID)
+	}
+
 	user, err := h.authService.SyncUser(c.Request.Context(), userID, emailStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

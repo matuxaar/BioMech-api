@@ -3,17 +3,20 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"os"
 	"strings"
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/gin-gonic/gin"
 )
 
+var devMode bool
+
+func InitAuth(dev bool) {
+	devMode = dev
+}
+
 func AuthRequired(firebaseApp *firebase.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		devMode := os.Getenv("DEV_MODE") == "true"
-
 		if devMode {
 			c.Set("user_id", "dev-user-id")
 			c.Set("email", "dev@biomech.app")

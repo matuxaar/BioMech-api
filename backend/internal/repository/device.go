@@ -195,9 +195,3 @@ func (r *DeviceRepository) UpdateLastTrainingAt(ctx context.Context, id string, 
 	return err
 }
 
-func nullIfEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}

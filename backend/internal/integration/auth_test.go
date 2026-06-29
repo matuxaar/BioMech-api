@@ -3,7 +3,6 @@ package integration
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +10,7 @@ import (
 )
 
 func TestDevModeAuthBypass(t *testing.T) {
-	os.Setenv("DEV_MODE", "true")
-	defer os.Unsetenv("DEV_MODE")
+	middleware.InitAuth(true)
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -39,8 +37,7 @@ func TestDevModeAuthBypass(t *testing.T) {
 }
 
 func TestDevModeDisabledRequiresAuth(t *testing.T) {
-	os.Setenv("DEV_MODE", "false")
-	defer os.Unsetenv("DEV_MODE")
+	middleware.InitAuth(false)
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -59,8 +56,7 @@ func TestDevModeDisabledRequiresAuth(t *testing.T) {
 }
 
 func TestInternalAuthMiddleware(t *testing.T) {
-	os.Setenv("INTERNAL_API_KEY", "test-key-123")
-	defer os.Unsetenv("INTERNAL_API_KEY")
+	t.Setenv("INTERNAL_API_KEY", "test-key-123")
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -99,7 +95,7 @@ func TestInternalAuthMiddleware(t *testing.T) {
 }
 
 func TestInternalAuthNotConfigured(t *testing.T) {
-	os.Unsetenv("INTERNAL_API_KEY")
+	t.Setenv("INTERNAL_API_KEY", "")
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -111,7 +107,7 @@ func TestInternalAuthNotConfigured(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected 500, got %d", w.Code)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503, got %d", w.Code)
 	}
 }

@@ -5,14 +5,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/matuxaar/BioMech-api/internal/model"
-	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
 type EMGHandler struct {
-	emgService *service.EMGService
+	emgService EMGService
 }
 
-func NewEMGHandler(emgService *service.EMGService) *EMGHandler {
+func NewEMGHandler(emgService EMGService) *EMGHandler {
 	return &EMGHandler{emgService: emgService}
 }
 

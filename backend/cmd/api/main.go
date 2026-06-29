@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/matuxaar/BioMech-api/internal/config"
 	"github.com/matuxaar/BioMech-api/internal/handler"
+	"github.com/matuxaar/BioMech-api/internal/middleware"
 	"github.com/matuxaar/BioMech-api/internal/migrations"
 	"github.com/matuxaar/BioMech-api/internal/repository"
 	"github.com/matuxaar/BioMech-api/internal/service"
@@ -22,6 +23,9 @@ import (
 func main() {
 	migrations.SetupLogger()
 	cfg := config.Load()
+
+	middleware.InitCORS(cfg.CORSOrigins)
+	middleware.InitAuth(cfg.DevMode)
 
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -43,7 +47,7 @@ func main() {
 	slog.Info("all migrations applied")
 
 	var firebaseApp *firebase.App
-	if os.Getenv("DEV_MODE") != "true" {
+	if !cfg.DevMode {
 		if _, statErr := os.Stat(cfg.FirebaseCredsFile); statErr == nil {
 			opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
 			firebaseApp, err = firebase.NewApp(context.Background(), nil, opt)
@@ -62,18 +66,18 @@ func main() {
 	trainingRepo := repository.NewTrainingRepository(db)
 	trainingFileRepo := repository.NewTrainingFileRepository(db)
 
-	mlClient := service.NewMLClient(cfg.MLServiceURL)
+	mlClient := service.NewMLClient(cfg.MLServiceURL, cfg.MLRequestTimeout)
 
 	authService := service.NewAuthService(userRepo)
 	deviceService := service.NewDeviceService(deviceRepo)
 	emgService := service.NewEMGService(emgRepo, deviceRepo)
 	trainingService := service.NewTrainingService(trainingRepo, emgRepo, deviceRepo, mlClient)
-	trainingFileService := service.NewTrainingFileService(trainingFileRepo)
+	trainingFileService := service.NewTrainingFileService(trainingFileRepo, cfg.TrainingDir)
 	statsRepo := repository.NewStatsRepository(db)
 	statsService := service.NewStatsService(statsRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
-	userHandler := handler.NewUserHandler(authService)
+	userHandler := handler.NewUserHandler(authService, cfg.AvatarsDir)
 	deviceHandler := handler.NewDeviceHandler(deviceService)
 	emgHandler := handler.NewEMGHandler(emgService)
 	trainingHandler := handler.NewTrainingHandler(trainingService)
@@ -81,19 +85,19 @@ func main() {
 	statsHandler := handler.NewStatsHandler(statsService)
 	wsHandler := handler.NewWSHandler(mlClient)
 
-	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler, trainingFileHandler)
+	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler, trainingFileHandler, cfg.MaxUploadSizeMB, cfg.UploadsDir)
 
 	srv := &http.Server{
-		Addr:         ":" + cfg.ServerPort,
-		Handler:      router,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		ReadHeaderTimeout: 20 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		Addr:              ":" + cfg.ServerPort,
+		Handler:           router,
+		ReadTimeout:       cfg.ReadTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
 	}
 
 	go func() {
-		slog.Info("server starting", "port", cfg.ServerPort)
+		slog.Info("server starting", "port", cfg.ServerPort, "dev_mode", cfg.DevMode)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)
@@ -105,6 +109,8 @@ func main() {
 	<-quit
 
 	slog.Info("shutting down server...")
+	handler.CloseAllWS()
+	middleware.StopRateLimiters()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

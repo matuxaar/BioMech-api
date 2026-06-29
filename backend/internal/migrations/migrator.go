@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -47,15 +46,8 @@ func Run(db *pgxpool.Pool, migrationsDir string) error {
 			return fmt.Errorf("read %s: %w", name, err)
 		}
 
-		statements := strings.Split(string(sql), ";")
-		for _, stmt := range statements {
-			stmt = strings.TrimSpace(stmt)
-			if stmt == "" {
-				continue
-			}
-			if _, err := db.Exec(context.Background(), stmt); err != nil {
-				return fmt.Errorf("execute %s: %w", name, err)
-			}
+		if _, err := db.Exec(context.Background(), string(sql)); err != nil {
+			return fmt.Errorf("execute %s: %w", name, err)
 		}
 
 		if _, err := db.Exec(context.Background(),

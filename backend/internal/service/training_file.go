@@ -13,21 +13,26 @@ import (
 )
 
 type TrainingFileService struct {
-	fileRepo *repository.TrainingFileRepository
+	fileRepo  *repository.TrainingFileRepository
+	uploadDir string
 }
 
-func NewTrainingFileService(fileRepo *repository.TrainingFileRepository) *TrainingFileService {
-	return &TrainingFileService{fileRepo: fileRepo}
+func NewTrainingFileService(fileRepo *repository.TrainingFileRepository, uploadDir string) *TrainingFileService {
+	return &TrainingFileService{fileRepo: fileRepo, uploadDir: uploadDir}
 }
 
 func (s *TrainingFileService) Upload(ctx context.Context, userID, deviceID, label, originalName string, file io.Reader, fileSize int64) (*model.TrainingFile, error) {
-	uploadDir := "uploads/training"
+	uploadDir := s.uploadDir
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create upload dir: %w", err)
 	}
 
 	ext := filepath.Ext(originalName)
-	storedName := fmt.Sprintf("%s_%s%s", userID[:8], uuid.New().String(), ext)
+	uid := userID
+	if len(uid) > 8 {
+		uid = uid[:8]
+	}
+	storedName := fmt.Sprintf("%s_%s%s", uid, uuid.New().String(), ext)
 	filePath := filepath.Join(uploadDir, storedName)
 
 	dst, err := os.Create(filePath)

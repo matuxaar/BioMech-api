@@ -11,7 +11,7 @@ func InternalAuth() gin.HandlerFunc {
 	apiKey := os.Getenv("INTERNAL_API_KEY")
 	return func(c *gin.Context) {
 		if apiKey == "" {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal auth not configured"})
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "internal auth not configured"})
 			return
 		}
 		if c.GetHeader("X-API-Key") != apiKey {

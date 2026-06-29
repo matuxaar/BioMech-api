@@ -89,8 +89,3 @@ func (r *TrainingFileRepository) Delete(ctx context.Context, id, userID string) 
 	_, err := r.db.Exec(ctx, `DELETE FROM training_files WHERE id = $1 AND user_id = $2`, id, userID)
 	return err
 }
-
-func (r *TrainingFileRepository) UpdateFilePath(ctx context.Context, id, filePath string) error {
-	_, err := r.db.Exec(ctx, `UPDATE training_files SET file_path = $1 WHERE id = $2`, filePath, id)
-	return err
-}

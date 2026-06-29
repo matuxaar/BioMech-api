@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 
+from app.config import settings
+
 
 class TrainRequest(BaseModel):
     job_id: str = Field(..., min_length=1)
@@ -31,7 +33,7 @@ class EMGSample(BaseModel):
 
 
 class PredictRequest(BaseModel):
-    samples: list[EMGSample] = Field(..., min_length=1)
+    samples: list[EMGSample] = Field(..., min_length=1, max_length=settings.max_predict_batch)
 
 
 class PredictResponse(BaseModel):
@@ -39,18 +41,21 @@ class PredictResponse(BaseModel):
 
 
 class StreamSample(BaseModel):
-    ch1: float = Field(..., ge=-10, le=10)
-    ch2: float = Field(..., ge=-10, le=10)
-    ch3: float = Field(..., ge=-10, le=10)
-    ch4: float = Field(..., ge=-10, le=10)
-    ch5: float = Field(..., ge=-10, le=10)
-    ch6: float = Field(..., ge=-10, le=10)
-    ch7: float = Field(..., ge=-10, le=10)
-    ch8: float = Field(..., ge=-10, le=10)
+    channel_1: float = Field(..., ge=-10, le=10, alias="ch1")
+    channel_2: float = Field(..., ge=-10, le=10, alias="ch2")
+    channel_3: float = Field(..., ge=-10, le=10, alias="ch3")
+    channel_4: float = Field(..., ge=-10, le=10, alias="ch4")
+    channel_5: float = Field(..., ge=-10, le=10, alias="ch5")
+    channel_6: float = Field(..., ge=-10, le=10, alias="ch6")
+    channel_7: float = Field(..., ge=-10, le=10, alias="ch7")
+    channel_8: float = Field(..., ge=-10, le=10, alias="ch8")
+
+    class Config:
+        populate_by_name = True
 
 
 class StreamPredictRequest(BaseModel):
-    samples: list[StreamSample] = Field(..., min_length=1)
+    samples: list[StreamSample] = Field(..., min_length=1, max_length=settings.max_predict_batch)
 
 
 class StreamPredictResponse(BaseModel):

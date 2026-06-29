@@ -1,20 +1,21 @@
 """
 EMG feature extraction utilities.
-
-Extracts common time-domain features used in EMG pattern recognition:
-- RMS (Root Mean Square)
-- MAV (Mean Absolute Value)
-- WL (Waveform Length)
-- ZC (Zero Crossing)
-- SSC (Slope Sign Change)
 """
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def extract_features(window: np.ndarray) -> np.ndarray:
     n_channels = window.shape[1]
     features = []
+
+    if np.any(np.isnan(window)):
+        logger.warning("NaN values detected in feature extraction window")
+        window = np.nan_to_num(window)
 
     for ch in range(n_channels):
         x = window[:, ch]
@@ -35,6 +36,10 @@ def extract_features(window: np.ndarray) -> np.ndarray:
 def sliding_window(
     data: np.ndarray, window_size: int, stride: int
 ) -> np.ndarray:
+    if np.any(np.isnan(data)):
+        logger.warning("NaN values in sliding_window input, replacing with 0")
+        data = np.nan_to_num(data)
+
     features = []
     for start in range(0, len(data) - window_size + 1, stride):
         window = data[start : start + window_size]

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -15,11 +16,12 @@ import (
 )
 
 type UserHandler struct {
-	authService *service.AuthService
+	authService AuthService
+	avatarsDir  string
 }
 
-func NewUserHandler(authService *service.AuthService) *UserHandler {
-	return &UserHandler{authService: authService}
+func NewUserHandler(authService AuthService, avatarsDir string) *UserHandler {
+	return &UserHandler{authService: authService, avatarsDir: avatarsDir}
 }
 
 func (h *UserHandler) Me(c *gin.Context) {
@@ -85,18 +87,23 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	defer file.Close()
 
 	ext := filepath.Ext(header.Filename)
+	ext = strings.ToLower(ext)
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file type, allowed: jpg, jpeg, png, gif"})
 		return
 	}
 
-	uploadDir := "uploads/avatars"
+	uploadDir := h.avatarsDir
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload dir"})
 		return
 	}
 
-	storedName := fmt.Sprintf("%s_%s%s", userID[:8], uuid.New().String(), ext)
+	uid := userID
+	if len(uid) > 8 {
+		uid = uid[:8]
+	}
+	storedName := fmt.Sprintf("%s_%s%s", uid, uuid.New().String(), ext)
 	filePath := filepath.Join(uploadDir, storedName)
 
 	dst, err := os.Create(filePath)
@@ -111,7 +118,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	photoURL := "/uploads/avatars/" + storedName
+	photoURL := "/" + uploadDir + "/" + storedName
 	_, err = h.authService.UpdateProfile(c.Request.Context(), userID, &model.UpdateUserRequest{
 		PhotoURL: &photoURL,
 	})

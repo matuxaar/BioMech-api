@@ -24,12 +24,13 @@ services:
       SERVER_PORT: "8080"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
       ML_SERVICE_URL: "http://ml:8000"
-      FIREBASE_CREDENTIALS: "/secrets/firebase-service-account.json"
+      INTERNAL_API_KEY: "dev-key"
+      CORS_ORIGINS: "http://localhost:8080"
+      UPLOADS_DIR: "/uploads"
       MIGRATIONS_DIR: "/migrations"
       DEV_MODE: "true"
     volumes:
-      - ./deploy/firebase-service-account.json:/secrets/firebase-service-account.json
-      - uploads:/app/uploads
+      - uploads:/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 10s

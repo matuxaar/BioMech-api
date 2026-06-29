@@ -1,10 +1,10 @@
 """
-Генератор тестовых EMG-данных.
+Test EMG data generator.
 
-Создаёт пользователя, устройства, EMG-сессии и синтетические сэмплы
-для всех 5 классов жестов: rest, fist, open, pinch, point.
+Creates a user, devices, EMG sessions and synthetic samples
+for all 5 gesture classes: rest, fist, open, pinch, point.
 
-Использование:
+Usage (run with DEV_MODE=true on the backend):
     pip install requests numpy
     python scripts/seed_data.py [--api-url http://localhost:8080]
 """
@@ -18,7 +18,6 @@ import requests
 
 API_URL = "http://localhost:8080"
 USER_EMAIL = "test@desertacia.dev"
-USER_PASSWORD = "testpassword123"
 
 GESTURES = ["rest", "fist", "open", "pinch", "point"]
 N_SAMPLES_PER_SESSION = 500
@@ -30,7 +29,7 @@ def generate_emg_samples(gesture: str, n: int) -> list[dict]:
     samples = []
     t0 = datetime.now(timezone.utc).timestamp()
 
-    # Параметры сигнала для каждого жеста
+    # Signal parameters per gesture
     params = {
         "rest":  {"amp": 0.01, "freq": 5,   "noise": 0.005},
         "fist":  {"amp": 0.8,  "freq": 50,  "noise": 0.05},
@@ -75,31 +74,23 @@ def main():
     base = args.api_url
 
     session = requests.Session()
+    DUMMY_TOKEN = "dev-mode-token"
 
-    # --- 1. Регистрация / логин ---
-    print("[1/6] Регистрация пользователя...")
-    r = session.post(f"{base}/api/v1/auth/register", json={
-        "email": USER_EMAIL,
-        "password": USER_PASSWORD,
-    })
-    if r.status_code == 201:
-        token = r.json()["access_token"]
-        print("      Пользователь создан")
-    elif r.status_code == 409:
-        print("      Пользователь уже существует, логинимся...")
-        r = session.post(f"{base}/api/v1/auth/login", json={
-            "email": USER_EMAIL,
-            "password": USER_PASSWORD,
-        })
-        token = r.json()["access_token"]
+    # --- 1. Sync user (Firebase sync, in DEV_MODE it creates the user) ---
+    print("[1/6] Syncing user...")
+    r = session.post(f"{base}/api/v1/auth/firebase", headers={"Authorization": f"Bearer {DUMMY_TOKEN}"})
+    if r.status_code == 200:
+        print("      User created")
+        user = r.json()
+        print(f"      User: {user.get('id', 'unknown')}")
     else:
-        print(f"      Ошибка: {r.status_code} {r.text}")
+        print(f"      Failed to sync user: {r.status_code} {r.text}")
         return
 
-    session.headers.update({"Authorization": f"Bearer {token}"})
+    session.headers.update({"Authorization": f"Bearer {DUMMY_TOKEN}"})
 
-    # --- 2. Создать устройство (сенсор) ---
-    print("[2/6] Создание устройства-сенсора...")
+    # --- 2. Create sensor device ---
+    print("[2/6] Creating sensor device...")
     r = session.post(f"{base}/api/v1/devices", json={
         "type": "sensor",
         "name": "EMG Armband v1",
@@ -107,13 +98,13 @@ def main():
     })
     if r.status_code == 201:
         sensor_id = r.json()["id"]
-        print(f"      Сенсор: {sensor_id}")
+        print(f"      Sensor: {sensor_id}")
     else:
-        print(f"      Ошибка: {r.status_code} {r.text}")
+        print(f"      Error: {r.status_code} {r.text}")
         return
 
-    # --- 3. Создать устройство (протез) ---
-    print("[3/6] Создание устройства-протеза...")
+    # --- 3. Create prosthetic device ---
+    print("[3/6] Creating prosthetic device...")
     r = session.post(f"{base}/api/v1/devices", json={
         "type": "prosthetic",
         "name": "Bionic Hand Pro",
@@ -121,13 +112,13 @@ def main():
     })
     if r.status_code == 201:
         prosthetic_id = r.json()["id"]
-        print(f"      Протез: {prosthetic_id}")
+        print(f"      Prosthetic: {prosthetic_id}")
     else:
-        print(f"      Ошибка: {r.status_code} {r.text}")
+        print(f"      Error: {r.status_code} {r.text}")
         return
 
-    # --- 4-5. Для каждого жеста: создать сессию + загрузить сэмплы ---
-    print("[4/6] Создание EMG-сессий...")
+    # --- 4-5. For each gesture: create session + upload samples ---
+    print("[4/6] Creating EMG sessions...")
     session_ids = {}
     for gesture in GESTURES:
         r = session.post(f"{base}/api/v1/emg/sessions", json={
@@ -139,10 +130,10 @@ def main():
             session_ids[gesture] = sid
             print(f"      {gesture}: {sid}")
         else:
-            print(f"      Ошибка: {r.status_code} {r.text}")
+            print(f"      Error: {r.status_code} {r.text}")
             return
 
-    print("[5/6] Генерация и загрузка сэмплов...")
+    print("[5/6] Generating and uploading samples...")
     for gesture in GESTURES:
         sid = session_ids[gesture]
         samples = generate_emg_samples(gesture, N_SAMPLES_PER_SESSION)
@@ -151,28 +142,28 @@ def main():
             "samples": samples,
         })
         if r.status_code == 201:
-            print(f"      {gesture}: {len(samples)} сэмплов загружено")
+            print(f"      {gesture}: {len(samples)} samples uploaded")
         else:
-            print(f"      Ошибка: {r.status_code} {r.text}")
+            print(f"      Error: {r.status_code} {r.text}")
             return
 
-    # --- 6. Закончить сессии ---
-    print("[6/6] Завершение сессий...")
+    # --- 6. End sessions ---
+    print("[6/6] Ending sessions...")
     for gesture in GESTURES:
         sid = session_ids[gesture]
         r = session.post(f"{base}/api/v1/emg/sessions/{sid}/end")
         if r.status_code == 200:
-            print(f"      {gesture}: завершена")
+            print(f"      {gesture}: ended")
         else:
-            print(f"      Ошибка: {r.status_code} {r.text}")
+            print(f"      Error: {r.status_code} {r.text}")
 
-    print("\nГотово! Данные загружены:")
-    print(f"  Пользователь: {USER_EMAIL} / {USER_PASSWORD}")
-    print(f"  Сессий: {len(session_ids)}")
-    print(f"  Сэмплов: {len(GESTURES) * N_SAMPLES_PER_SESSION}")
-    print(f"\nТеперь можно запустить обучение:")
+    print("\nDone! Data loaded:")
+    print(f"  User: {USER_EMAIL}")
+    print(f"  Sessions: {len(session_ids)}")
+    print(f"  Samples: {len(GESTURES) * N_SAMPLES_PER_SESSION}")
+    print(f"\nNow you can start training:")
     print(f"  curl -X POST {base}/api/v1/training/jobs \\")
-    print(f"    -H 'Authorization: Bearer {token}' \\")
+    print(f"    -H 'Authorization: Bearer {DUMMY_TOKEN}' \\")
     print(f"    -H 'Content-Type: application/json' \\")
     print(f"    -d '{{\"session_ids\": [\"{session_ids['fist']}\", \"{session_ids['open']}\"]}}'")
 
