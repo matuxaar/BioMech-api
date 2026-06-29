@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.router import train, predict
+from app.config import settings
 
 app = FastAPI(
     title="Desertacia ML Service",
@@ -13,4 +14,12 @@ app.include_router(predict.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    db_ok = False
+    try:
+        import psycopg2
+        conn = psycopg2.connect(settings.database_url)
+        conn.close()
+        db_ok = True
+    except Exception:
+        pass
+    return {"status": "ok" if db_ok else "degraded", "database": "connected" if db_ok else "unavailable"}

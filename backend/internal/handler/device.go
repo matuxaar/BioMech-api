@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -68,7 +69,10 @@ func (h *DeviceHandler) Update(c *gin.Context) {
 	device, err := h.deviceService.Update(c.Request.Context(), userID, c.Param("id"), &req)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "access denied" {
+		switch {
+		case errors.Is(err, service.ErrDeviceNotFound):
+			status = http.StatusNotFound
+		case err.Error() == "access denied":
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -83,7 +87,10 @@ func (h *DeviceHandler) Delete(c *gin.Context) {
 
 	if err := h.deviceService.Delete(c.Request.Context(), userID, c.Param("id")); err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "access denied" {
+		switch {
+		case errors.Is(err, service.ErrDeviceNotFound):
+			status = http.StatusNotFound
+		case err.Error() == "access denied":
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -99,7 +106,10 @@ func (h *DeviceHandler) GetActions(c *gin.Context) {
 	actions, err := h.deviceService.GetActions(c.Request.Context(), userID, c.Param("id"))
 	if err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "access denied" {
+		switch {
+		case errors.Is(err, service.ErrDeviceNotFound):
+			status = http.StatusNotFound
+		case err.Error() == "access denied":
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})

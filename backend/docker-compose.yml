@@ -32,6 +32,7 @@ services:
       JWT_SECRET: "super-secret-key-change-in-production"
       ML_SERVICE_URL: "http://ml:8000"
       DEV_MODE: "true"
+      MIGRATIONS_DIR: "/migrations"
     depends_on:
       db:
         condition: service_healthy

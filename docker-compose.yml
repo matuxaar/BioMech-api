@@ -25,6 +25,7 @@ services:
       DATABASE_URL: "postgres://postgres:postgres@db:5432/desertacia?sslmode=disable"
       ML_SERVICE_URL: "http://ml:8000"
       FIREBASE_CREDENTIALS: "/secrets/firebase-service-account.json"
+      MIGRATIONS_DIR: "/migrations"
       DEV_MODE: "true"
     volumes:
       - ./deploy/firebase-service-account.json:/secrets/firebase-service-account.json
@@ -41,6 +42,11 @@ services:
       MODELS_DIR: "/app/models"
     volumes:
       - ml_models:/app/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       db:
         condition: service_healthy

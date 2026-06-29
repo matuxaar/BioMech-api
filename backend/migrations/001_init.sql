@@ -1,13 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(128) PRIMARY KEY,
     email VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE devices (
+CREATE TABLE IF NOT EXISTS devices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL CHECK (type IN ('prosthetic', 'sensor')),
@@ -16,9 +16,9 @@ CREATE TABLE devices (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_devices_user_id ON devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_devices_user_id ON devices(user_id);
 
-CREATE TABLE emg_sessions (
+CREATE TABLE IF NOT EXISTS emg_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
@@ -28,10 +28,10 @@ CREATE TABLE emg_sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_emg_sessions_user_id ON emg_sessions(user_id);
-CREATE INDEX idx_emg_sessions_device_id ON emg_sessions(device_id);
+CREATE INDEX IF NOT EXISTS idx_emg_sessions_user_id ON emg_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_emg_sessions_device_id ON emg_sessions(device_id);
 
-CREATE TABLE emg_samples (
+CREATE TABLE IF NOT EXISTS emg_samples (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL REFERENCES emg_sessions(id) ON DELETE CASCADE,
     timestamp TIMESTAMPTZ NOT NULL,
@@ -46,10 +46,10 @@ CREATE TABLE emg_samples (
     metadata JSONB DEFAULT '{}'
 );
 
-CREATE INDEX idx_emg_samples_session_id ON emg_samples(session_id);
-CREATE INDEX idx_emg_samples_timestamp ON emg_samples(timestamp);
+CREATE INDEX IF NOT EXISTS idx_emg_samples_session_id ON emg_samples(session_id);
+CREATE INDEX IF NOT EXISTS idx_emg_samples_timestamp ON emg_samples(timestamp);
 
-CREATE TABLE training_jobs (
+CREATE TABLE IF NOT EXISTS training_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     session_ids UUID[] NOT NULL,
@@ -61,5 +61,5 @@ CREATE TABLE training_jobs (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_training_jobs_user_id ON training_jobs(user_id);
-CREATE INDEX idx_training_jobs_status ON training_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_training_jobs_user_id ON training_jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_training_jobs_status ON training_jobs(status);

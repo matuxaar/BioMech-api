@@ -11,6 +11,7 @@ type Config struct {
 	DatabaseURL       string
 	MLServiceURL      string
 	FirebaseCredsFile string
+	MigrationsDir     string
 }
 
 func Load() *Config {
@@ -21,6 +22,7 @@ func Load() *Config {
 		DatabaseURL:       getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/desertacia?sslmode=disable"),
 		MLServiceURL:      getEnv("ML_SERVICE_URL", "http://ml:8000"),
 		FirebaseCredsFile: getEnv("FIREBASE_CREDENTIALS", "/secrets/firebase-service-account.json"),
+		MigrationsDir:     getEnv("MIGRATIONS_DIR", "migrations"),
 	}
 }
 

@@ -36,8 +36,8 @@ func (r *DeviceRepository) Create(ctx context.Context, userID string, req *model
 		 ble_service_uuid, ble_command_char_uuid, ble_status_char_uuid, ble_emg_char_uuid, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 		device.ID, device.UserID, device.Type, device.Name, device.HWVersion,
-		nullIfEmpty(device.BLEServiceUUID), nullIfEmpty(device.BLECommandCharUUID),
-		nullIfEmpty(device.BLEStatusCharUUID), nullIfEmpty(device.BLEEMGCharUUID),
+		device.BLEServiceUUID, device.BLECommandCharUUID,
+		device.BLEStatusCharUUID, device.BLEEMGCharUUID,
 		device.CreatedAt,
 	)
 	if err != nil {

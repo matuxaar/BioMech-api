@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,55 +10,43 @@ import (
 	"time"
 
 	firebase "firebase.google.com/go/v4"
-	"firebase.google.com/go/v4/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/matuxaar/BioMech-api/internal/config"
 	"github.com/matuxaar/BioMech-api/internal/handler"
+	"github.com/matuxaar/BioMech-api/internal/migrations"
 	"github.com/matuxaar/BioMech-api/internal/repository"
 	"github.com/matuxaar/BioMech-api/internal/service"
 	"google.golang.org/api/option"
 )
 
-var firebaseAuth *auth.Client
-
-func runMigrations(db *pgxpool.Pool) {
-	migrations := []string{
-		`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname VARCHAR(50) UNIQUE`,
-		`CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname)`,
-		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_service_uuid VARCHAR(64) DEFAULT ''`,
-		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_command_char_uuid VARCHAR(64) DEFAULT ''`,
-		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_status_char_uuid VARCHAR(64) DEFAULT ''`,
-		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS ble_emg_char_uuid VARCHAR(64) DEFAULT ''`,
-		`ALTER TABLE device_actions ADD COLUMN IF NOT EXISTS action_code INT NOT NULL DEFAULT 0`,
-	}
-	
-	for _, m := range migrations {
-		if _, err := db.Exec(context.Background(), m); err != nil {
-			log.Printf("migration warning: %v", err)
-		}
-	}
-	log.Println("migrations applied")
-}
-
 func main() {
+	migrations.SetupLogger()
 	cfg := config.Load()
 
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
 	if err := db.Ping(context.Background()); err != nil {
-		log.Fatalf("failed to ping database: %v", err)
+		slog.Error("failed to ping database", "error", err)
+		os.Exit(1)
 	}
+	slog.Info("connected to database")
 
-	runMigrations(db)
+	if err := migrations.Run(db, cfg.MigrationsDir); err != nil {
+		slog.Error("migration failed", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("all migrations applied")
 
 	opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
 	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
-		log.Fatalf("failed to initialize Firebase app: %v", err)
+		slog.Error("failed to initialize Firebase app", "error", err)
+		os.Exit(1)
 	}
 
 	userRepo := repository.NewUserRepository(db)
@@ -84,7 +72,6 @@ func main() {
 	trainingHandler := handler.NewTrainingHandler(trainingService)
 	trainingFileHandler := handler.NewTrainingFileHandler(trainingFileService)
 	statsHandler := handler.NewStatsHandler(statsService)
-
 	wsHandler := handler.NewWSHandler(mlClient)
 
 	router := handler.SetupRouter(firebaseApp, authHandler, userHandler, deviceHandler, emgHandler, trainingHandler, statsHandler, wsHandler, trainingFileHandler)
@@ -98,9 +85,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("server starting on :%s", cfg.ServerPort)
+		slog.Info("server starting", "port", cfg.ServerPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server error: %v", err)
+			slog.Error("server error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -108,11 +96,11 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("shutting down server...")
+	slog.Info("shutting down server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("forced shutdown: %v", err)
+		slog.Error("forced shutdown", "error", err)
 	}
 }
