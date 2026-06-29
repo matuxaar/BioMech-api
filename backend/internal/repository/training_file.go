@@ -54,7 +54,7 @@ func (r *TrainingFileRepository) CountByUserID(ctx context.Context, userID strin
 func (r *TrainingFileRepository) FindByUserID(ctx context.Context, userID string, page, limit int) ([]model.TrainingFile, error) {
 	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
-		`SELECT id, user_id, COALESCE(device_id, ''), original_name, file_path, file_size, COALESCE(label, ''), created_at
+		`SELECT id, user_id, COALESCE(device_id::text, ''), original_name, file_path, file_size, COALESCE(label, ''), created_at
 		 FROM training_files WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`, userID, limit, offset,
 	)
 	if err != nil {
@@ -76,7 +76,7 @@ func (r *TrainingFileRepository) FindByUserID(ctx context.Context, userID string
 func (r *TrainingFileRepository) FindByID(ctx context.Context, id string) (*model.TrainingFile, error) {
 	f := &model.TrainingFile{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, user_id, COALESCE(device_id, ''), original_name, file_path, file_size, COALESCE(label, ''), created_at
+		`SELECT id, user_id, COALESCE(device_id::text, ''), original_name, file_path, file_size, COALESCE(label, ''), created_at
 		 FROM training_files WHERE id = $1`, id,
 	).Scan(&f.ID, &f.UserID, &f.DeviceID, &f.OriginalName, &f.FilePath, &f.FileSize, &f.Label, &f.CreatedAt)
 	if err != nil {

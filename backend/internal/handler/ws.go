@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/matuxaar/BioMech-api/internal/model"
 	"github.com/matuxaar/BioMech-api/internal/middleware"
+	"github.com/matuxaar/BioMech-api/internal/model"
 	"github.com/matuxaar/BioMech-api/internal/service"
 )
 

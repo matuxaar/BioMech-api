@@ -322,8 +322,8 @@ func TestDeviceHandler_Create_Success(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/", jsonBody(model.CreateDeviceRequest{
-		Name:     "My Band",
-		Type:     "prosthetic",
+		Name:      "My Band",
+		Type:      "prosthetic",
 		HWVersion: "1.0",
 	}))
 	req.Header.Set("Content-Type", "application/json")
@@ -560,5 +560,3 @@ func TestStatsHandler_Dashboard_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 }
-
-

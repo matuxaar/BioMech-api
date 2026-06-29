@@ -185,7 +185,7 @@ func (r *EMGRepository) CountSamplesBySessionID(ctx context.Context, sessionID s
 func (r *EMGRepository) FindSamplesBySessionID(ctx context.Context, sessionID string, page, limit int) ([]model.EMGSample, error) {
 	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
-		`SELECT id, session_id, timestamp, channel_1, channel_2, channel_3, channel_4, channel_5, channel_6, channel_7, channel_8, COALESCE(metadata, '')
+		`SELECT id, session_id, timestamp, channel_1, channel_2, channel_3, channel_4, channel_5, channel_6, channel_7, channel_8, COALESCE(metadata::text, '')
 		 FROM emg_samples WHERE session_id = $1 ORDER BY timestamp ASC LIMIT $2 OFFSET $3`, sessionID, limit, offset,
 	)
 	if err != nil {

@@ -13,8 +13,8 @@ import (
 )
 
 type Migration struct {
-	Name   string
-	SQL    string
+	Name string
+	SQL  string
 }
 
 func Run(db *pgxpool.Pool, migrationsDir string) error {

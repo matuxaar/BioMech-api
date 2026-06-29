@@ -5,10 +5,10 @@ import "time"
 type TrainingStatus string
 
 const (
-	TrainingStatusPending    TrainingStatus = "pending"
-	TrainingStatusRunning    TrainingStatus = "running"
-	TrainingStatusCompleted  TrainingStatus = "completed"
-	TrainingStatusFailed     TrainingStatus = "failed"
+	TrainingStatusPending   TrainingStatus = "pending"
+	TrainingStatusRunning   TrainingStatus = "running"
+	TrainingStatusCompleted TrainingStatus = "completed"
+	TrainingStatusFailed    TrainingStatus = "failed"
 )
 
 type TrainingJob struct {

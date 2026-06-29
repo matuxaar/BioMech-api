@@ -25,17 +25,17 @@ func StopRateLimiters() {
 }
 
 type rateLimiter struct {
-	mu       sync.Mutex
-	clients  map[string]*clientBucket
-	rate     int
-	burst    int
-	cleanup  time.Duration
-	stopCh   chan struct{}
+	mu      sync.Mutex
+	clients map[string]*clientBucket
+	rate    int
+	burst   int
+	cleanup time.Duration
+	stopCh  chan struct{}
 }
 
 type clientBucket struct {
-	tokens   int
-	last     time.Time
+	tokens int
+	last   time.Time
 }
 
 func RateLimit(rate, burst int) gin.HandlerFunc {

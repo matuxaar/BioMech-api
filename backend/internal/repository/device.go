@@ -19,16 +19,16 @@ func NewDeviceRepository(db *pgxpool.Pool) *DeviceRepository {
 
 func (r *DeviceRepository) Create(ctx context.Context, userID string, req *model.CreateDeviceRequest) (*model.Device, error) {
 	device := &model.Device{
-		ID:                uuid.New().String(),
-		UserID:            userID,
-		Type:              req.Type,
-		Name:              req.Name,
-		HWVersion:         req.HWVersion,
-		BLEServiceUUID:    req.BLEServiceUUID,
+		ID:                 uuid.New().String(),
+		UserID:             userID,
+		Type:               req.Type,
+		Name:               req.Name,
+		HWVersion:          req.HWVersion,
+		BLEServiceUUID:     req.BLEServiceUUID,
 		BLECommandCharUUID: req.BLECommandCharUUID,
-		BLEStatusCharUUID: req.BLEStatusCharUUID,
-		BLEEMGCharUUID:    req.BLEEMGCharUUID,
-		CreatedAt:         time.Now(),
+		BLEStatusCharUUID:  req.BLEStatusCharUUID,
+		BLEEMGCharUUID:     req.BLEEMGCharUUID,
+		CreatedAt:          time.Now(),
 	}
 
 	_, err := r.db.Exec(ctx,
@@ -194,4 +194,3 @@ func (r *DeviceRepository) UpdateLastTrainingAt(ctx context.Context, id string, 
 	_, err := r.db.Exec(ctx, `UPDATE devices SET last_training_at = $1 WHERE id = $2`, t, id)
 	return err
 }
-

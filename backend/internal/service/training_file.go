@@ -84,5 +84,3 @@ func (s *TrainingFileService) Delete(ctx context.Context, id, userID string) err
 	os.Remove(f.FilePath)
 	return s.fileRepo.Delete(ctx, id, userID)
 }
-
-

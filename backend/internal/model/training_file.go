@@ -12,4 +12,3 @@ type TrainingFile struct {
 	Label        string    `json:"label,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 }
-

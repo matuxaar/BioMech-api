@@ -10,10 +10,10 @@ import (
 
 func TestParsePagination(t *testing.T) {
 	tests := []struct {
-		name        string
-		query       string
-		wantPage    int
-		wantLimit   int
+		name      string
+		query     string
+		wantPage  int
+		wantLimit int
 	}{
 		{"defaults", "", 1, 20},
 		{"custom page", "?page=3", 3, 20},

@@ -1,0 +1,38 @@
+#!/bin/sh
+# Pre-commit hook for BioMech project
+set -euo pipefail
+
+echo "=== Pre-commit checks ==="
+
+# Go checks
+if [ -d backend ]; then
+  echo "[go] formatting..."
+  gofmt -l backend/ | xargs -r -I{} sh -c 'echo "  would fix: {}"; exit 1' || {
+    echo "Run: gofmt -w backend/\$file"
+    exit 1
+  }
+
+  echo "[go] vet..."
+  (cd backend && go vet ./...)
+
+  echo "[go] build..."
+  (cd backend && go build ./...)
+
+  echo "[go] tests..."
+  (cd backend && go test ./... -count=1)
+fi
+
+# Python checks
+if [ -d ml ]; then
+  if command -v ruff >/dev/null 2>&1; then
+    echo "[python] ruff check..."
+    ruff check ml/
+  fi
+
+  if command -v mypy >/dev/null 2>&1; then
+    echo "[python] mypy..."
+    mypy ml/app/
+  fi
+fi
+
+echo "=== All checks passed ==="

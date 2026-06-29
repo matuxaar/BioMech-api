@@ -324,3 +324,47 @@ output "internal_api_key" {
   value     = random_password.internal_api_key.result
   sensitive = true
 }
+
+# --- Cloud Armor security policy (rate limiting + WAF) ---
+resource "google_compute_security_policy" "rate_limit" {
+  name        = "biomech-rate-limit"
+  description = "Rate limiting and WAF rules for BioMech API"
+
+  rule {
+    action   = "rate_based_ban"
+    priority = 1000
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    rate_limit_options {
+      enforce_on_key       = "IP"
+      conform_action       = "allow"
+      exceed_action        = "deny(429)"
+      enforce_on_key_name  = ""
+      rate_limit_threshold {
+        count        = 1000
+        interval_sec = 60
+      }
+      ban_duration_sec = 300
+      ban_threshold {
+        count        = 2000
+        interval_sec = 300
+      }
+    }
+  }
+
+  rule {
+    action   = "allow"
+    priority = 2147483647
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    description = "default allow"
+  }
+}

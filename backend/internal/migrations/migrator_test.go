@@ -60,8 +60,6 @@ func TestSetupLogger(t *testing.T) {
 	SetupLogger()
 }
 
-
-
 // Test that the create table SQL is valid
 func TestCreateMigrationsTableSQL(t *testing.T) {
 	sql := `CREATE TABLE IF NOT EXISTS schema_migrations (
