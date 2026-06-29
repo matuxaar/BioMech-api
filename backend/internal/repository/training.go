@@ -2,12 +2,16 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/matuxaar/BioMech-api/internal/model"
 )
+
+var ErrTrainingJobNotFound = errors.New("training job not found")
 
 type TrainingRepository struct {
 	db *pgxpool.Pool
@@ -39,10 +43,17 @@ func (r *TrainingRepository) Create(ctx context.Context, userID string, req *mod
 	return job, nil
 }
 
-func (r *TrainingRepository) FindByUserID(ctx context.Context, userID string) ([]model.TrainingJob, error) {
+func (r *TrainingRepository) CountByUserID(ctx context.Context, userID string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_jobs WHERE user_id = $1`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *TrainingRepository) FindByUserID(ctx context.Context, userID string, page, limit int) ([]model.TrainingJob, error) {
+	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, session_ids, status, COALESCE(model_path, ''), COALESCE(accuracy, 0), COALESCE(error_message, ''), created_at, updated_at
-		 FROM training_jobs WHERE user_id = $1 ORDER BY created_at DESC`, userID,
+		 FROM training_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`, userID, limit, offset,
 	)
 	if err != nil {
 		return nil, err
@@ -78,10 +89,16 @@ func (r *TrainingRepository) FindByID(ctx context.Context, id string) (*model.Tr
 }
 
 func (r *TrainingRepository) UpdateStatus(ctx context.Context, id string, status model.TrainingStatus, modelPath string, accuracy float64, errMsg string) error {
-	_, err := r.db.Exec(ctx,
+	ct, err := r.db.Exec(ctx,
 		`UPDATE training_jobs SET status = $1, model_path = $2, accuracy = $3, error_message = $4, updated_at = $5
 		 WHERE id = $6`,
 		status, modelPath, accuracy, errMsg, time.Now(), id,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }

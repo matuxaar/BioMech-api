@@ -42,11 +42,18 @@ func main() {
 	}
 	slog.Info("all migrations applied")
 
-	opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
-	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		slog.Error("failed to initialize Firebase app", "error", err)
-		os.Exit(1)
+	var firebaseApp *firebase.App
+	if os.Getenv("DEV_MODE") != "true" {
+		if _, statErr := os.Stat(cfg.FirebaseCredsFile); statErr == nil {
+			opt := option.WithCredentialsFile(cfg.FirebaseCredsFile)
+			firebaseApp, err = firebase.NewApp(context.Background(), nil, opt)
+			if err != nil {
+				slog.Error("failed to initialize Firebase app", "error", err)
+				os.Exit(1)
+			}
+		} else {
+			slog.Warn("Firebase credentials file not found, auth disabled", "path", cfg.FirebaseCredsFile)
+		}
 	}
 
 	userRepo := repository.NewUserRepository(db)
@@ -60,7 +67,7 @@ func main() {
 	authService := service.NewAuthService(userRepo)
 	deviceService := service.NewDeviceService(deviceRepo)
 	emgService := service.NewEMGService(emgRepo, deviceRepo)
-	trainingService := service.NewTrainingService(trainingRepo, emgRepo, mlClient)
+	trainingService := service.NewTrainingService(trainingRepo, emgRepo, deviceRepo, mlClient)
 	trainingFileService := service.NewTrainingFileService(trainingFileRepo)
 	statsRepo := repository.NewStatsRepository(db)
 	statsService := service.NewStatsService(statsRepo)
@@ -79,9 +86,10 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 0,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 20 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {

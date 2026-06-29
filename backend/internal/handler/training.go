@@ -41,18 +41,20 @@ func (h *TrainingHandler) CreateJob(c *gin.Context) {
 
 func (h *TrainingHandler) ListJobs(c *gin.Context) {
 	userID := c.GetString("user_id")
+	p := model.ParsePagination(c)
 
-	jobs, err := h.trainingService.ListJobs(c.Request.Context(), userID)
+	result, err := h.trainingService.ListJobs(c.Request.Context(), userID, p.Page, p.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, jobs)
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *TrainingHandler) GetJob(c *gin.Context) {
-	job, err := h.trainingService.GetJob(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	job, err := h.trainingService.GetJob(c.Request.Context(), userID, c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "job not found"})
 		return
@@ -112,12 +114,17 @@ func (h *TrainingHandler) Upload(c *gin.Context) {
 	}
 	label := c.PostForm("label")
 
-	file, _, err := c.Request.FormFile("file")
+	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
 		return
 	}
 	defer file.Close()
+
+	if header.Size > 50<<20 {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file too large: max 50 MB"})
+		return
+	}
 
 	session, err := h.trainingService.ProcessUpload(c.Request.Context(), userID, deviceID, label, file)
 	if err != nil {

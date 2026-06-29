@@ -4,6 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+GESTURE_LABELS = [
+    "rest",
+    "fist",
+    "open",
+    "pinch",
+    "point",
+]
+
+
 class Settings:
     database_url: str = os.getenv(
         "DATABASE_URL",

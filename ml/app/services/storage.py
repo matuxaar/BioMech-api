@@ -1,12 +1,18 @@
 import os
 import tempfile
+
 from google.cloud import storage
 
 from app.config import settings
 
+_client = None
+
 
 def get_client() -> storage.Client:
-    return storage.Client()
+    global _client
+    if _client is None:
+        _client = storage.Client()
+    return _client
 
 
 def save_model(local_path: str, job_id: str) -> str:

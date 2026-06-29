@@ -9,6 +9,7 @@ type EMGSession struct {
 	Label     string     `json:"label"`
 	StartedAt time.Time  `json:"started_at"`
 	EndedAt   *time.Time `json:"ended_at,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at"`
 	CreatedAt time.Time  `json:"created_at"`
 }
 

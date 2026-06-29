@@ -33,12 +33,12 @@ func (r *DeviceRepository) Create(ctx context.Context, userID string, req *model
 
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO devices (id, user_id, type, name, hw_version,
-		 ble_service_uuid, ble_command_char_uuid, ble_status_char_uuid, ble_emg_char_uuid, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		 ble_service_uuid, ble_command_char_uuid, ble_status_char_uuid, ble_emg_char_uuid, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		device.ID, device.UserID, device.Type, device.Name, device.HWVersion,
 		device.BLEServiceUUID, device.BLECommandCharUUID,
 		device.BLEStatusCharUUID, device.BLEEMGCharUUID,
-		device.CreatedAt,
+		device.CreatedAt, device.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -47,12 +47,20 @@ func (r *DeviceRepository) Create(ctx context.Context, userID string, req *model
 	return device, nil
 }
 
-func (r *DeviceRepository) FindByUserID(ctx context.Context, userID string) ([]model.Device, error) {
+func (r *DeviceRepository) CountByUserID(ctx context.Context, userID string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM devices WHERE user_id = $1`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *DeviceRepository) FindByUserID(ctx context.Context, userID string, page, limit int) ([]model.Device, error) {
+	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, type, name, hw_version,
 		 COALESCE(ble_service_uuid, ''), COALESCE(ble_command_char_uuid, ''),
-		 COALESCE(ble_status_char_uuid, ''), COALESCE(ble_emg_char_uuid, ''), created_at
-		 FROM devices WHERE user_id = $1 ORDER BY created_at DESC`, userID,
+		 COALESCE(ble_status_char_uuid, ''), COALESCE(ble_emg_char_uuid, ''),
+		 last_recording_at, last_training_at, updated_at, created_at
+		 FROM devices WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`, userID, limit, offset,
 	)
 	if err != nil {
 		return nil, err
@@ -63,7 +71,8 @@ func (r *DeviceRepository) FindByUserID(ctx context.Context, userID string) ([]m
 	for rows.Next() {
 		var d model.Device
 		if err := rows.Scan(&d.ID, &d.UserID, &d.Type, &d.Name, &d.HWVersion,
-			&d.BLEServiceUUID, &d.BLECommandCharUUID, &d.BLEStatusCharUUID, &d.BLEEMGCharUUID, &d.CreatedAt); err != nil {
+			&d.BLEServiceUUID, &d.BLECommandCharUUID, &d.BLEStatusCharUUID, &d.BLEEMGCharUUID,
+			&d.LastRecordingAt, &d.LastTrainingAt, &d.UpdatedAt, &d.CreatedAt); err != nil {
 			return nil, err
 		}
 		devices = append(devices, d)
@@ -77,10 +86,12 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id string) (*model.Devi
 	err := r.db.QueryRow(ctx,
 		`SELECT id, user_id, type, name, hw_version,
 		 COALESCE(ble_service_uuid, ''), COALESCE(ble_command_char_uuid, ''),
-		 COALESCE(ble_status_char_uuid, ''), COALESCE(ble_emg_char_uuid, ''), created_at
+		 COALESCE(ble_status_char_uuid, ''), COALESCE(ble_emg_char_uuid, ''),
+		 last_recording_at, last_training_at, updated_at, created_at
 		 FROM devices WHERE id = $1`, id,
 	).Scan(&device.ID, &device.UserID, &device.Type, &device.Name, &device.HWVersion,
-		&device.BLEServiceUUID, &device.BLECommandCharUUID, &device.BLEStatusCharUUID, &device.BLEEMGCharUUID, &device.CreatedAt)
+		&device.BLEServiceUUID, &device.BLECommandCharUUID, &device.BLEStatusCharUUID, &device.BLEEMGCharUUID,
+		&device.LastRecordingAt, &device.LastTrainingAt, &device.UpdatedAt, &device.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +183,16 @@ func (r *DeviceRepository) GetUserActionStats(ctx context.Context, userID string
 		names = append(names, n)
 	}
 	return names, nil
+}
+
+func (r *DeviceRepository) UpdateLastRecordingAt(ctx context.Context, id string, t time.Time) error {
+	_, err := r.db.Exec(ctx, `UPDATE devices SET last_recording_at = $1 WHERE id = $2`, t, id)
+	return err
+}
+
+func (r *DeviceRepository) UpdateLastTrainingAt(ctx context.Context, id string, t time.Time) error {
+	_, err := r.db.Exec(ctx, `UPDATE devices SET last_training_at = $1 WHERE id = $2`, t, id)
+	return err
 }
 
 func nullIfEmpty(s string) *string {

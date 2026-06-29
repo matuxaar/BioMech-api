@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,7 +57,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 
 	_, err := h.authService.UpdateProfile(c.Request.Context(), userID, &req)
 	if err != nil {
-		if err.Error() == "nickname already taken" {
+		if errors.Is(err, service.ErrNicknameTaken) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}

@@ -19,6 +19,9 @@ type Device struct {
 	BLECommandCharUUID string    `json:"ble_command_char_uuid,omitempty"`
 	BLEStatusCharUUID string     `json:"ble_status_char_uuid,omitempty"`
 	BLEEMGCharUUID    string     `json:"ble_emg_char_uuid,omitempty"`
+	LastRecordingAt   *time.Time `json:"last_recording_at,omitempty"`
+	LastTrainingAt    *time.Time `json:"last_training_at,omitempty"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 	CreatedAt         time.Time  `json:"created_at"`
 }
 

@@ -1,0 +1,3 @@
+ALTER TABLE devices
+  ADD COLUMN IF NOT EXISTS last_recording_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_training_at TIMESTAMPTZ;

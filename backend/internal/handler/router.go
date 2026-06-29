@@ -18,6 +18,7 @@ func SetupRouter(
 	trainingFileHandler *TrainingFileHandler,
 ) *gin.Engine {
 	r := gin.Default()
+	r.MaxMultipartMemory = 50 << 20 // 50 MB
 
 	r.Use(middleware.CORS())
 
@@ -25,7 +26,7 @@ func SetupRouter(
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	r.POST("/api/v1/training/jobs/:id/status", trainingHandler.UpdateJobStatus)
+	r.POST("/api/v1/training/jobs/:id/status", middleware.InternalAuth(), trainingHandler.UpdateJobStatus)
 
 	r.Static("/uploads", "./uploads")
 

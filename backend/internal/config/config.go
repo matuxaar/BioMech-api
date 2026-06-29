@@ -12,6 +12,7 @@ type Config struct {
 	MLServiceURL      string
 	FirebaseCredsFile string
 	MigrationsDir     string
+	CORSOrigins       string
 }
 
 func Load() *Config {
@@ -23,6 +24,7 @@ func Load() *Config {
 		MLServiceURL:      getEnv("ML_SERVICE_URL", "http://ml:8000"),
 		FirebaseCredsFile: getEnv("FIREBASE_CREDENTIALS", "/secrets/firebase-service-account.json"),
 		MigrationsDir:     getEnv("MIGRATIONS_DIR", "migrations"),
+		CORSOrigins:       getEnv("CORS_ORIGINS", "*"),
 	}
 }
 

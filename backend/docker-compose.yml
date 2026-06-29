@@ -22,6 +22,19 @@ services:
       timeout: 5s
       retries: 5
 
+  ml:
+    build: ../ml
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/desertacia"
+      MODELS_DIR: "/app/models"
+    volumes:
+      - ml_models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build: .
     ports:
@@ -38,3 +51,4 @@ services:
 
 volumes:
   pgdata:
+  ml_models:

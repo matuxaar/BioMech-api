@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/matuxaar/BioMech-api/internal/model"
 	"github.com/matuxaar/BioMech-api/internal/service"
 )
 
@@ -29,6 +31,11 @@ func (h *TrainingFileHandler) Upload(c *gin.Context) {
 	}
 	defer file.Close()
 
+	if header.Size > 50<<20 {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file too large: max 50 MB"})
+		return
+	}
+
 	tf, err := h.fileService.Upload(c.Request.Context(), userID, deviceID, label, header.Filename, file, header.Size)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -43,18 +50,20 @@ func (h *TrainingFileHandler) Upload(c *gin.Context) {
 
 func (h *TrainingFileHandler) List(c *gin.Context) {
 	userID := c.GetString("user_id")
+	p := model.ParsePagination(c)
 
-	files, err := h.fileService.List(c.Request.Context(), userID)
+	result, err := h.fileService.List(c.Request.Context(), userID, p.Page, p.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, files)
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *TrainingFileHandler) Get(c *gin.Context) {
-	file, err := h.fileService.Get(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	file, err := h.fileService.Get(c.Request.Context(), c.Param("id"), userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
 		return
@@ -64,13 +73,14 @@ func (h *TrainingFileHandler) Get(c *gin.Context) {
 }
 
 func (h *TrainingFileHandler) Download(c *gin.Context) {
-	filePath, err := h.fileService.GetFilePath(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	file, err := h.fileService.Get(c.Request.Context(), c.Param("id"), userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
 		return
 	}
 
-	c.FileAttachment(filePath, filepath.Base(filePath))
+	c.FileAttachment(file.FilePath, filepath.Base(file.FilePath))
 }
 
 func (h *TrainingFileHandler) Delete(c *gin.Context) {
@@ -78,7 +88,7 @@ func (h *TrainingFileHandler) Delete(c *gin.Context) {
 
 	if err := h.fileService.Delete(c.Request.Context(), c.Param("id"), userID); err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "access denied" {
+		if errors.Is(err, service.ErrAccessDenied) {
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})

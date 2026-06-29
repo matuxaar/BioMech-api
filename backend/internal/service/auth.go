@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrNicknameTaken  = errors.New("nickname already taken")
 )
 
 type AuthService struct {
@@ -37,11 +38,7 @@ func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (
 func (s *AuthService) GetProfile(ctx context.Context, userID string) (*model.ProfileResponse, error) {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		// auto-create user if not found (skip flow, dev mode)
-		user, err = s.userRepo.Create(ctx, userID, "dev@biomech.app")
-		if err != nil {
-			return nil, err
-		}
+		return nil, ErrUserNotFound
 	}
 
 	deviceCount, err := s.userRepo.CountDevices(ctx, userID)
@@ -63,7 +60,7 @@ func (s *AuthService) UpdateProfile(ctx context.Context, userID string, req *mod
 	if req.Nickname != nil && *req.Nickname != "" {
 		existing, err := s.userRepo.FindByNickname(ctx, *req.Nickname)
 		if err == nil && existing.ID != userID {
-			return nil, errors.New("nickname already taken")
+			return nil, ErrNicknameTaken
 		}
 	}
 	return s.userRepo.UpdateProfile(ctx, userID, req)

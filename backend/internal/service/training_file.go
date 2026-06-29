@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/matuxaar/BioMech-api/internal/model"
@@ -45,12 +44,28 @@ func (s *TrainingFileService) Upload(ctx context.Context, userID, deviceID, labe
 	return s.fileRepo.Create(ctx, userID, deviceID, originalName, filePath, label, written)
 }
 
-func (s *TrainingFileService) List(ctx context.Context, userID string) ([]model.TrainingFile, error) {
-	return s.fileRepo.FindByUserID(ctx, userID)
+func (s *TrainingFileService) List(ctx context.Context, userID string, page, limit int) (*model.PaginatedResponse[model.TrainingFile], error) {
+	total, err := s.fileRepo.CountByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	files, err := s.fileRepo.FindByUserID(ctx, userID, page, limit)
+	if err != nil {
+		return nil, err
+	}
+	result := model.NewPaginatedResponse(files, total, page, limit)
+	return &result, nil
 }
 
-func (s *TrainingFileService) Get(ctx context.Context, id string) (*model.TrainingFile, error) {
-	return s.fileRepo.FindByID(ctx, id)
+func (s *TrainingFileService) Get(ctx context.Context, id, userID string) (*model.TrainingFile, error) {
+	f, err := s.fileRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if f.UserID != userID {
+		return nil, ErrAccessDenied
+	}
+	return f, nil
 }
 
 func (s *TrainingFileService) Delete(ctx context.Context, id, userID string) error {
@@ -65,12 +80,4 @@ func (s *TrainingFileService) Delete(ctx context.Context, id, userID string) err
 	return s.fileRepo.Delete(ctx, id, userID)
 }
 
-func (s *TrainingFileService) GetFilePath(ctx context.Context, id string) (string, error) {
-	f, err := s.fileRepo.FindByID(ctx, id)
-	if err != nil {
-		return "", err
-	}
-	return f.FilePath, nil
-}
 
-var _ = time.Now

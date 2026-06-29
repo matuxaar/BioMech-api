@@ -1,6 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 from app.router import train, predict
 from app.config import settings
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+logger.info("starting ML service")
 
 app = FastAPI(
     title="Desertacia ML Service",

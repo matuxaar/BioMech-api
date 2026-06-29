@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io"
+	"log"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -13,28 +16,43 @@ import (
 	"github.com/matuxaar/BioMech-api/internal/repository"
 )
 
-var ErrAccessDenied = errors.New("access denied")
-
 type TrainingService struct {
 	trainingRepo *repository.TrainingRepository
 	emgRepo      *repository.EMGRepository
+	deviceRepo   *repository.DeviceRepository
 	mlClient     *MLClient
 }
 
-func NewTrainingService(trainingRepo *repository.TrainingRepository, emgRepo *repository.EMGRepository, mlClient *MLClient) *TrainingService {
-	return &TrainingService{trainingRepo: trainingRepo, emgRepo: emgRepo, mlClient: mlClient}
+func NewTrainingService(trainingRepo *repository.TrainingRepository, emgRepo *repository.EMGRepository, deviceRepo *repository.DeviceRepository, mlClient *MLClient) *TrainingService {
+	return &TrainingService{trainingRepo: trainingRepo, emgRepo: emgRepo, deviceRepo: deviceRepo, mlClient: mlClient}
 }
 
 func (s *TrainingService) CreateJob(ctx context.Context, userID string, req *model.CreateTrainingJobRequest) (*model.TrainingJob, error) {
 	return s.trainingRepo.Create(ctx, userID, req)
 }
 
-func (s *TrainingService) ListJobs(ctx context.Context, userID string) ([]model.TrainingJob, error) {
-	return s.trainingRepo.FindByUserID(ctx, userID)
+func (s *TrainingService) ListJobs(ctx context.Context, userID string, page, limit int) (*model.PaginatedResponse[model.TrainingJob], error) {
+	total, err := s.trainingRepo.CountByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	jobs, err := s.trainingRepo.FindByUserID(ctx, userID, page, limit)
+	if err != nil {
+		return nil, err
+	}
+	result := model.NewPaginatedResponse(jobs, total, page, limit)
+	return &result, nil
 }
 
-func (s *TrainingService) GetJob(ctx context.Context, id string) (*model.TrainingJob, error) {
-	return s.trainingRepo.FindByID(ctx, id)
+func (s *TrainingService) GetJob(ctx context.Context, userID, id string) (*model.TrainingJob, error) {
+	job, err := s.trainingRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if job.UserID != userID {
+		return nil, ErrAccessDenied
+	}
+	return job, nil
 }
 
 func (s *TrainingService) UpdateJobStatus(ctx context.Context, id, status, modelPath string, accuracy float64, errMsg string) error {
@@ -52,11 +70,31 @@ func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error
 	}
 
 	go func() {
-		if err := s.mlClient.Train(job); err != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("panic in StartTraining goroutine: %v\n%s", r, debug.Stack())
+				s.trainingRepo.UpdateStatus(context.Background(), jobID, model.TrainingStatusFailed, "", 0, fmt.Sprintf("panic: %v", r))
+			}
+		}()
+		result, err := s.mlClient.Train(job)
+		if err != nil {
 			s.trainingRepo.UpdateStatus(context.Background(), jobID, model.TrainingStatusFailed, "", 0, err.Error())
 			return
 		}
-		s.trainingRepo.UpdateStatus(context.Background(), jobID, model.TrainingStatusCompleted, "models/"+jobID+".h5", 0.95, "")
+		status := model.TrainingStatusCompleted
+		if result.Status == "failed" {
+			status = model.TrainingStatusFailed
+		}
+		s.trainingRepo.UpdateStatus(context.Background(), jobID, status, result.ModelPath, result.Accuracy, "")
+		if status == model.TrainingStatusCompleted {
+			deviceIDs, err := s.emgRepo.FindDeviceIDsBySessionIDs(context.Background(), job.SessionIDs)
+			if err == nil {
+				now := time.Now()
+				for _, did := range deviceIDs {
+					s.deviceRepo.UpdateLastTrainingAt(context.Background(), did, now)
+				}
+			}
+		}
 	}()
 
 	return nil
@@ -138,6 +176,8 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 	if err := s.emgRepo.AddSamplesBatch(ctx, session.ID, samples); err != nil {
 		return nil, err
 	}
+
+	s.deviceRepo.UpdateLastRecordingAt(ctx, deviceID, time.Now())
 
 	return session, nil
 }

@@ -35,7 +35,8 @@ func (h *EMGHandler) StartSession(c *gin.Context) {
 }
 
 func (h *EMGHandler) EndSession(c *gin.Context) {
-	if err := h.emgService.EndSession(c.Request.Context(), c.Param("id")); err != nil {
+	userID := c.GetString("user_id")
+	if err := h.emgService.EndSession(c.Request.Context(), userID, c.Param("id")); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -45,18 +46,20 @@ func (h *EMGHandler) EndSession(c *gin.Context) {
 
 func (h *EMGHandler) ListSessions(c *gin.Context) {
 	userID := c.GetString("user_id")
+	p := model.ParsePagination(c)
 
-	sessions, err := h.emgService.ListSessions(c.Request.Context(), userID)
+	result, err := h.emgService.ListSessions(c.Request.Context(), userID, p.Page, p.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, sessions)
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *EMGHandler) GetSession(c *gin.Context) {
-	session, err := h.emgService.GetSession(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	session, err := h.emgService.GetSession(c.Request.Context(), userID, c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
 		return
@@ -66,6 +69,7 @@ func (h *EMGHandler) GetSession(c *gin.Context) {
 }
 
 func (h *EMGHandler) AddSample(c *gin.Context) {
+	userID := c.GetString("user_id")
 	sessionID := c.Param("id")
 
 	var req model.AddSampleRequest
@@ -74,7 +78,7 @@ func (h *EMGHandler) AddSample(c *gin.Context) {
 		return
 	}
 
-	sample, err := h.emgService.AddSample(c.Request.Context(), sessionID, &req)
+	sample, err := h.emgService.AddSample(c.Request.Context(), userID, sessionID, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -84,6 +88,7 @@ func (h *EMGHandler) AddSample(c *gin.Context) {
 }
 
 func (h *EMGHandler) AddSamplesBatch(c *gin.Context) {
+	userID := c.GetString("user_id")
 	sessionID := c.Param("id")
 
 	var req struct {
@@ -94,7 +99,7 @@ func (h *EMGHandler) AddSamplesBatch(c *gin.Context) {
 		return
 	}
 
-	if err := h.emgService.AddSamplesBatch(c.Request.Context(), sessionID, req.Samples); err != nil {
+	if err := h.emgService.AddSamplesBatch(c.Request.Context(), userID, sessionID, req.Samples); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -103,11 +108,14 @@ func (h *EMGHandler) AddSamplesBatch(c *gin.Context) {
 }
 
 func (h *EMGHandler) GetSamples(c *gin.Context) {
-	samples, err := h.emgService.GetSamples(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	p := model.ParsePagination(c)
+
+	result, err := h.emgService.GetSamples(c.Request.Context(), userID, c.Param("id"), p.Page, p.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, samples)
+	c.JSON(http.StatusOK, result)
 }

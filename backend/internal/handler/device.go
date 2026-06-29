@@ -37,24 +37,26 @@ func (h *DeviceHandler) Create(c *gin.Context) {
 
 func (h *DeviceHandler) List(c *gin.Context) {
 	userID := c.GetString("user_id")
+	p := model.ParsePagination(c)
 
-	devices, err := h.deviceService.ListByUser(c.Request.Context(), userID)
+	result, err := h.deviceService.ListByUser(c.Request.Context(), userID, p.Page, p.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, devices)
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *DeviceHandler) GetByID(c *gin.Context) {
-	devices, err := h.deviceService.GetByID(c.Request.Context(), c.Param("id"))
+	userID := c.GetString("user_id")
+	device, err := h.deviceService.GetByID(c.Request.Context(), userID, c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, devices)
+	c.JSON(http.StatusOK, device)
 }
 
 func (h *DeviceHandler) Update(c *gin.Context) {
@@ -72,7 +74,7 @@ func (h *DeviceHandler) Update(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrDeviceNotFound):
 			status = http.StatusNotFound
-		case err.Error() == "access denied":
+		case errors.Is(err, service.ErrAccessDenied):
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -90,7 +92,7 @@ func (h *DeviceHandler) Delete(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrDeviceNotFound):
 			status = http.StatusNotFound
-		case err.Error() == "access denied":
+		case errors.Is(err, service.ErrAccessDenied):
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -109,7 +111,7 @@ func (h *DeviceHandler) GetActions(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrDeviceNotFound):
 			status = http.StatusNotFound
-		case err.Error() == "access denied":
+		case errors.Is(err, service.ErrAccessDenied):
 			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"error": err.Error()})

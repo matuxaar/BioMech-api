@@ -45,10 +45,17 @@ func (r *TrainingFileRepository) Create(ctx context.Context, userID, deviceID, o
 	return f, nil
 }
 
-func (r *TrainingFileRepository) FindByUserID(ctx context.Context, userID string) ([]model.TrainingFile, error) {
+func (r *TrainingFileRepository) CountByUserID(ctx context.Context, userID string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM training_files WHERE user_id = $1`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *TrainingFileRepository) FindByUserID(ctx context.Context, userID string, page, limit int) ([]model.TrainingFile, error) {
+	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, COALESCE(device_id, ''), original_name, file_path, file_size, COALESCE(label, ''), created_at
-		 FROM training_files WHERE user_id = $1 ORDER BY created_at DESC`, userID,
+		 FROM training_files WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`, userID, limit, offset,
 	)
 	if err != nil {
 		return nil, err

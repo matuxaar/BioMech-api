@@ -55,10 +55,18 @@ def train(
     features = scaler.fit_transform(features)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        features, y, test_size=0.2, random_state=42
+        features, y, test_size=0.2, random_state=42, stratify=y,
     )
 
     model = build_model(features.shape[1], n_classes)
+
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_accuracy",
+            patience=10,
+            restore_best_weights=True,
+        ),
+    ]
 
     model.fit(
         X_train,
@@ -66,6 +74,7 @@ def train(
         epochs=50,
         batch_size=32,
         validation_data=(X_test, y_test),
+        callbacks=callbacks,
         verbose=1,
     )
 

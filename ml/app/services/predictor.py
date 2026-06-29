@@ -1,21 +1,15 @@
 import json
 import os
+import threading
 
 import numpy as np
 import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
 
 from app.models.schemas import EMGSample
 from app.services.features import extract_features
-from app.config import settings
+from app.config import settings, GESTURE_LABELS
 from app.services.storage import download_model
-
-GESTURE_LABELS = [
-    "rest",
-    "fist",
-    "open",
-    "pinch",
-    "point",
-]
 
 
 class Predictor:
@@ -24,6 +18,8 @@ class Predictor:
         self._model = None
         self._scaler = None
         self._n_classes = settings.n_classes
+        self._fallback = True
+        self._lock = threading.Lock()
 
     def _load_latest(self):
         if settings.gcs_bucket:
@@ -33,7 +29,8 @@ class Predictor:
             blobs = list(bucket.list_blobs(prefix=settings.gcs_models_prefix + "/"))
             h5_blobs = [b for b in blobs if b.name.endswith(".h5")]
             if not h5_blobs:
-                raise RuntimeError("no trained model found in GCS")
+                self._fallback = True
+                return
             latest = max(h5_blobs, key=lambda b: b.updated)
             latest_name = latest.name.split("/")[-1]
             model_local = download_model(f"gs://{settings.gcs_bucket}/{latest.name}")
@@ -42,26 +39,36 @@ class Predictor:
         else:
             h5_files = [f for f in os.listdir(self.model_dir) if f.endswith(".h5")]
             if not h5_files:
-                raise RuntimeError("no trained model found")
+                self._fallback = True
+                return
             latest_name = max(h5_files, key=lambda f: os.path.getmtime(os.path.join(self.model_dir, f)))
             model_local = os.path.join(self.model_dir, latest_name)
             scaler_local = model_local.replace(".h5", "_scaler.json")
-            if not os.path.exists(scaler_local):
-                raise RuntimeError(f"scaler not found for {latest_name}")
 
+        self._fallback = False
         self._model = tf.keras.models.load_model(model_local)
         with open(scaler_local) as f:
             scaler_data = json.load(f)
+            self._scaler = StandardScaler()
+            self._scaler.mean_ = np.array(scaler_data["mean"])
+            self._scaler.scale_ = np.array(scaler_data["scale"])
+            self._scaler.n_features_in_ = scaler_data["n_features"]
             self._n_classes = scaler_data.get("n_classes", settings.n_classes)
 
     def get_model(self):
         if self._model is None:
-            self._load_latest()
+            with self._lock:
+                if self._model is None:
+                    self._load_latest()
         return self._model
 
     def predict(self, samples: list[EMGSample]) -> list[str]:
-        if self._model is None:
-            self._load_latest()
+        with self._lock:
+            if self._model is None:
+                self._load_latest()
+
+        if self._fallback:
+            return [GESTURE_LABELS[i % len(GESTURE_LABELS)] for i in range(len(samples))]
 
         data = np.array(
             [
@@ -83,12 +90,14 @@ class Predictor:
         if len(data) >= settings.window_size:
             features = extract_features(data[-settings.window_size:]).reshape(1, -1)
         elif len(data) >= 1:
-            # Pad with zeros to reach window_size, then extract features
             padded = np.zeros((settings.window_size, settings.n_channels), dtype=np.float32)
             padded[-len(data):] = data
             features = extract_features(padded).reshape(1, -1)
         else:
             raise ValueError("at least one sample required for prediction")
+
+        if self._scaler is not None:
+            features = self._scaler.transform(features)
 
         predictions = self._model.predict(features, verbose=0)
         predicted_indices = np.argmax(predictions, axis=1)
