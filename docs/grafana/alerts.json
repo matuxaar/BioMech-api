@@ -1,0 +1,43 @@
+{
+  "alerts": [
+    {
+      "name": "High Error Rate",
+      "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) > 0.05",
+      "for": "5m",
+      "labels": { "severity": "critical" },
+      "annotations": {
+        "summary": "HTTP 5xx error rate above 5%",
+        "description": "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+      }
+    },
+    {
+      "name": "High Latency P99",
+      "expr": "http_request_duration_seconds{quantile=\"0.99\"} > 5",
+      "for": "5m",
+      "labels": { "severity": "warning" },
+      "annotations": {
+        "summary": "P99 latency above 5s",
+        "description": "P99 latency is {{ $value }}s"
+      }
+    },
+    {
+      "name": "Rate Limited Requests",
+      "expr": "rate(rate_limited_total[5m]) > 10",
+      "for": "5m",
+      "labels": { "severity": "warning" },
+      "annotations": {
+        "summary": "High rate of 429 responses",
+        "description": "Rate limited at {{ $value | humanize }} requests/sec over 5m"
+      }
+    },
+    {
+      "name": "Service Down",
+      "expr": "up == 0",
+      "for": "1m",
+      "labels": { "severity": "critical" },
+      "annotations": {
+        "summary": "Service {{ $labels.instance }} is down"
+      }
+    }
+  ]
+}

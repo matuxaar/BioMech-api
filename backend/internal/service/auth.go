@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	"log/slog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/matuxaar/BioMech-api/internal/model"
@@ -29,7 +29,7 @@ func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (
 	existing, err := s.userRepo.FindByID(ctx, firebaseUID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Error("failed to lookup user during sync", "uid", firebaseUID, "error", err)
+			log.Error().Str("uid", firebaseUID).Err(err).Msg("failed to lookup user during sync")
 			return nil, err
 		}
 		return s.userRepo.Create(ctx, firebaseUID, email)
@@ -37,7 +37,7 @@ func (s *AuthService) SyncUser(ctx context.Context, firebaseUID, email string) (
 
 	if existing.Email != email && email != "" {
 		if err := s.userRepo.UpdateEmail(ctx, firebaseUID, email); err != nil {
-			slog.Error("failed to update email during sync", "uid", firebaseUID, "error", err)
+			log.Error().Str("uid", firebaseUID).Err(err).Msg("failed to update email during sync")
 		}
 	}
 	return existing, nil

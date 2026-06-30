@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log/slog"
+	"github.com/rs/zerolog/log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,10 +24,10 @@ func (h *AuthHandler) SyncUser(c *gin.Context) {
 		var ok bool
 		emailStr, ok = emailRaw.(string)
 		if !ok {
-			slog.Warn("sync user: email claim is not a string", "uid", userID)
+			log.Warn().Str("uid", userID).Msg("sync user: email claim is not a string")
 		}
 	} else {
-		slog.Warn("sync user: email claim missing from token", "uid", userID)
+		log.Warn().Str("uid", userID).Msg("sync user: email claim missing from token")
 	}
 
 	user, err := h.authService.SyncUser(c.Request.Context(), userID, emailStr)

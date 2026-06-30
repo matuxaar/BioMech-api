@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"sync"
 	"time"
@@ -68,7 +68,7 @@ var wsUpgrader = websocket.Upgrader{
 func (h *WSHandler) PredictStream(c *gin.Context) {
 	conn, err := wsUpgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		slog.Error("ws upgrade error", "error", err)
+		log.Error().Err(err).Msg("ws upgrade error")
 		return
 	}
 	middleware.TrackWSOpen()
@@ -93,7 +93,7 @@ func (h *WSHandler) PredictStream(c *gin.Context) {
 		defer mu.Unlock()
 		conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		if err := conn.WriteJSON(msg); err != nil {
-			slog.Warn("ws write error", "error", err)
+			log.Warn().Err(err).Msg("ws write error")
 		}
 		middleware.TrackWSMessage("outgoing")
 	}

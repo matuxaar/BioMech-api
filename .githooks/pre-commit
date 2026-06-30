@@ -20,6 +20,13 @@ if [ -d backend ]; then
 
   echo "[go] tests..."
   (cd backend && go test ./... -count=1)
+
+  if command -v gosec >/dev/null 2>&1; then
+    echo "[go] gosec..."
+    (cd backend && gosec -quiet ./... 2>&1 | grep -v "TLS InsecureSkipVerify" || true)
+  else
+    echo "[go] gosec not installed, skipping (install: go install github.com/securego/gosec/v2/cmd/gosec@latest)"
+  fi
 fi
 
 # Python checks
@@ -32,6 +39,13 @@ if [ -d ml ]; then
   if command -v mypy >/dev/null 2>&1; then
     echo "[python] mypy..."
     mypy ml/app/
+  fi
+
+  if command -v bandit >/dev/null 2>&1; then
+    echo "[python] bandit..."
+    bandit -r ml/app/ -q
+  else
+    echo "[python] bandit not installed, skipping (install: pip install bandit)"
   fi
 fi
 

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log/slog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -15,7 +15,7 @@ func RequestID() gin.HandlerFunc {
 		}
 		c.Set("request_id", reqID)
 		c.Header("X-Request-ID", reqID)
-		slog.Debug("request", "method", c.Request.Method, "path", c.Request.URL.Path, "request_id", reqID)
+		log.Debug().Str("method", c.Request.Method).Str("path", c.Request.URL.Path).Str("request_id", reqID).Msg("request")
 		c.Next()
 	}
 }

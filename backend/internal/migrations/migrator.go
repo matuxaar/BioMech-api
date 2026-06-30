@@ -3,13 +3,14 @@ package migrations
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type Migration struct {
@@ -39,7 +40,7 @@ func Run(db *pgxpool.Pool, migrationsDir string) error {
 			continue
 		}
 
-		slog.Info("applying migration", "name", name)
+		log.Info().Str("name", name).Msg("applying migration")
 
 		sql, err := os.ReadFile(f)
 		if err != nil {
@@ -55,14 +56,13 @@ func Run(db *pgxpool.Pool, migrationsDir string) error {
 			return fmt.Errorf("record %s: %w", name, err)
 		}
 
-		slog.Info("migration applied", "name", name)
+		log.Info().Str("name", name).Msg("migration applied")
 	}
 
 	return nil
 }
 
 func ensureMigrationsTable(db *pgxpool.Pool) error {
-	slog.Info("ensuring schema_migrations table exists")
 	_, err := db.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			name VARCHAR(255) PRIMARY KEY,
@@ -92,9 +92,9 @@ func getApplied(db *pgxpool.Pool) ([]string, error) {
 }
 
 func SetupLogger() {
-	level := slog.LevelInfo
+	level := zerolog.InfoLevel
 	if os.Getenv("DEV_MODE") == "true" {
-		level = slog.LevelDebug
+		level = zerolog.DebugLevel
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+	zerolog.SetGlobalLevel(level)
 }

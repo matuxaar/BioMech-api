@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"runtime/debug"
+
+	"github.com/rs/zerolog/log"
 	"strconv"
 	"strings"
 	"time"
@@ -81,13 +82,13 @@ func (s *TrainingService) StartTraining(ctx context.Context, jobID string) error
 
 		defer func() {
 			if r := recover(); r != nil {
-				slog.Error("panic in StartTraining goroutine", "job_id", jobID, "panic", r, "stack", string(debug.Stack()))
+				log.Error().Str("job_id", jobID).Interface("panic", r).Str("stack", string(debug.Stack())).Msg("panic in StartTraining goroutine")
 				s.trainingRepo.UpdateStatus(ctx, jobID, model.TrainingStatusFailed, "", 0, fmt.Sprintf("panic: %v", r))
 			}
 		}()
 		result, err := s.mlClient.Train(ctx, job)
 		if err != nil {
-			slog.Error("training failed", "job_id", jobID, "error", err)
+			log.Error().Str("job_id", jobID).Err(err).Msg("training failed")
 			s.trainingRepo.UpdateStatus(ctx, jobID, model.TrainingStatusFailed, "", 0, err.Error())
 			return
 		}
@@ -150,7 +151,7 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 
 		ts, err := time.Parse(time.RFC3339, strings.TrimSpace(record[0]))
 		if err != nil {
-			slog.Warn("csv: invalid timestamp, using current time", "value", record[0])
+			log.Warn().Str("value", record[0]).Msg("csv: invalid timestamp, using current time")
 			ts = time.Now()
 		}
 
@@ -162,7 +163,7 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 			if err != nil {
 				parseErrors++
 				if parseErrors <= 5 {
-					slog.Warn("csv: invalid channel value", "row", len(samples)+1, "channel", i+1, "value", record[i+1])
+					log.Warn().Int("row", len(samples)+1).Int("channel", i+1).Str("value", record[i+1]).Msg("csv: invalid channel value")
 				}
 				val = 0
 			}
@@ -193,7 +194,7 @@ func (s *TrainingService) ProcessUpload(ctx context.Context, userID, deviceID, l
 	}
 
 	if parseErrors > 0 {
-		slog.Warn("csv upload had parse errors", "total_errors", parseErrors, "total_rows", len(samples))
+		log.Warn().Int("total_errors", parseErrors).Int("total_rows", len(samples)).Msg("csv upload had parse errors")
 	}
 
 	if err := s.emgRepo.AddSamplesBatch(ctx, session.ID, samples); err != nil {
