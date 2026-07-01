@@ -44,7 +44,7 @@ func Load() *Config {
 		DevMode:           os.Getenv("DEV_MODE") == "true",
 		MaxUploadSizeMB:   int64Env("MAX_UPLOAD_SIZE_MB", 50),
 		UploadsDir:        getEnv("UPLOADS_DIR", "uploads"),
-		AvatarsDir:        getEnv("AVATARS_DIR", "uploads/avatars"),
+		AvatarsDir:        getEnv("AVATARS_DIR", getEnv("UPLOADS_DIR", "uploads")+"/avatars"),
 		TrainingDir:       getEnv("TRAINING_DIR", "uploads/training"),
 		WSBatchSize:       intEnv("WS_BATCH_SIZE", 32),
 		WSBufferInitCap:   intEnv("WS_BUFFER_INIT_CAP", 256),
