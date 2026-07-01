@@ -30,6 +30,9 @@ func SetupRouter(
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	r.GET("/api/v1/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	pprofGroup := r.Group("/debug/pprof")
