@@ -54,7 +54,6 @@ func SetupRouter(
 	r.POST("/api/v1/training/jobs/:id/status", middleware.InternalAuth(), trainingHandler.UpdateJobStatus)
 
 	uploads := r.Group("/uploads")
-	uploads.Use(middleware.AuthRequired(firebaseApp))
 	uploads.Static("", uploadsDir)
 
 	protected := r.Group("/api/v1")
