@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGION: us-central1
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  DB_USER: ${{ vars.DB_USER }}
+  DB_PASS: ${{ secrets.DB_PASS }}
+  DB_NAME: ${{ vars.DB_NAME }}
+  CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
+  ML_SERVICE_URL: ${{ vars.ML_SERVICE_URL }}
+  API_SERVICE_URL: ${{ vars.API_SERVICE_URL }}
+  INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+
+jobs:
+  deploy-api:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build and push API
+        run: |
+          gcloud builds submit \
+            --config cloudbuild.yaml \
+            --substitutions=_REGION=$REGION,_CLOUD_SQL_INSTANCE=$CLOUD_SQL_INSTANCE,_DB_USER=$DB_USER,_DB_PASS=$DB_PASS,_DB_NAME=$DB_NAME,_ML_SERVICE_URL=$ML_SERVICE_URL,_API_SERVICE_URL=$API_SERVICE_URL,_INTERNAL_API_KEY=$INTERNAL_API_KEY \
+            --project $PROJECT_ID
