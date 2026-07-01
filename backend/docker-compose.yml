@@ -40,9 +40,7 @@ services:
       INTERNAL_API_KEY: "dev-key"
       DEV_MODE: "true"
       MIGRATIONS_DIR: "/migrations"
-      UPLOADS_DIR: "/uploads"
-    volumes:
-      - uploads:/uploads
+      UPLOADS_DIR: "uploads"
     depends_on:
       db:
         condition: service_healthy
@@ -50,4 +48,3 @@ services:
 volumes:
   pgdata:
   ml_models:
-  uploads:

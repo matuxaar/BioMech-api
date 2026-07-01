@@ -118,7 +118,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	photoURL := "/" + strings.TrimLeft(uploadDir, "/") + "/" + storedName
+	photoURL := "/" + uploadDir + "/" + storedName
 	_, err = h.authService.UpdateProfile(c.Request.Context(), userID, &model.UpdateUserRequest{
 		PhotoURL: &photoURL,
 	})
